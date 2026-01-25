@@ -113,7 +113,7 @@ For **existing deployments with data**, you **MUST** manually add the MFA column
 Add the columns to the existing PostgreSQL database without losing data or downtime:
 
 ```bash
-docker exec readingnook_db psql -U readingnook -d readingnook -c "
+docker exec booknook_db psql -U booknook -d booknook -c "
 ALTER TABLE \"user\" ADD COLUMN mfa_enabled BOOLEAN DEFAULT FALSE;
 ALTER TABLE \"user\" ADD COLUMN mfa_secret_encrypted VARCHAR(255);
 ALTER TABLE \"user\" ADD COLUMN mfa_last_authenticated TIMESTAMP;
@@ -123,7 +123,7 @@ ALTER TABLE \"user\" ADD COLUMN mfa_last_authenticated TIMESTAMP;
 Then create the `trusted_device` table:
 
 ```bash
-docker exec readingnook_db psql -U readingnook -d readingnook << 'EOF'
+docker exec booknook_db psql -U booknook -d booknook << 'EOF'
 CREATE TABLE trusted_device (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES "user"(id),

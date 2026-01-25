@@ -140,8 +140,8 @@ This removes the old database and creates a new one with the correct schema. All
 Add the `status` column to the existing PostgreSQL database without losing data:
 
 ```bash
-docker exec readingnook_db psql -U readingnook -d readingnook -c "ALTER TABLE book ADD COLUMN status VARCHAR(20) DEFAULT 'read';"
-docker compose restart readingnook_app
+docker exec booknook_db psql -U booknook -d booknook -c "ALTER TABLE book ADD COLUMN status VARCHAR(20) DEFAULT 'read';"
+docker compose restart booknook_app
 ```
 
 This approach:

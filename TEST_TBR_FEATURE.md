@@ -73,7 +73,7 @@ When you first run the updated app with a fresh database:
 **To add the column to an existing PostgreSQL database:**
 
 ```bash
-docker exec readingnook_db psql -U readingnook -d readingnook -c "ALTER TABLE book ADD COLUMN status VARCHAR(20) DEFAULT 'read';"
+docker exec booknook_db psql -U booknook -d booknook -c "ALTER TABLE book ADD COLUMN status VARCHAR(20) DEFAULT 'read';"
 ```
 
 If you skip this step, the app will fail with: `column "book"."status" does not exist`

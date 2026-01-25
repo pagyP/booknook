@@ -1,10 +1,10 @@
-[![Tests](https://github.com/pagyP/readingnook/actions/workflows/python-app.yml/badge.svg)](https://github.com/pagyP/readingnook/actions/workflows/python-app.yml)
+[![Tests](https://github.com/pagyP/booknook/actions/workflows/python-app.yml/badge.svg)](https://github.com/pagyP/booknook/actions/workflows/python-app.yml)
 
-[![Bandit](https://github.com/pagyP/readingnook/actions/workflows/bandit.yml/badge.svg)](https://github.com/pagyP/readingnook/actions/workflows/bandit.yml)
+[![Bandit](https://github.com/pagyP/booknook/actions/workflows/bandit.yml/badge.svg)](https://github.com/pagyP/booknook/actions/workflows/bandit.yml)
 
-[![Build and Push Docker Image](https://github.com/pagyP/readingnook/actions/workflows/docker-build-push.yml/badge.svg)](https://github.com/pagyP/readingnook/actions/workflows/docker-build-push.yml)
+[![Build and Push Docker Image](https://github.com/pagyP/booknook/actions/workflows/docker-build-push.yml/badge.svg)](https://github.com/pagyP/booknook/actions/workflows/docker-build-push.yml)
 
-[![CodeQL](https://github.com/pagyP/readingnook/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/pagyP/readingnook/actions/workflows/github-code-scanning/codeql)
+[![CodeQL](https://github.com/pagyP/booknook/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/pagyP/booknook/actions/workflows/github-code-scanning/codeql)
 
 
 # Reading Nook 📚
@@ -37,8 +37,8 @@ This application **requires Docker and Docker Compose**. All other setup is hand
 
 1. **Clone the project:**
    ```bash
-   git clone https://github.com/pagyP/readingnook.git
-   cd readingnook
+   git clone https://github.com/pagyP/booknook.git
+   cd booknook
    ```
 
 2. **Set environment variables:**
@@ -65,7 +65,7 @@ This application **requires Docker and Docker Compose**. All other setup is hand
    
    Or configure a local PostgreSQL instance and add to your `.env`:
    ```bash
-   SQLALCHEMY_DATABASE_URI=postgresql+psycopg://username:password@localhost:5432/readingnook
+   SQLALCHEMY_DATABASE_URI=postgresql+psycopg://username:password@localhost:5432/booknook
    ```
    
    **Note:** PostgreSQL is required for all environments. There is no SQLite fallback.
@@ -76,9 +76,9 @@ For users who want to run the pre-built image from GitHub Container Registry:
 1. **Create environment file:**
    ```bash
    # Create .env with your database configuration
-   DB_USER=readingnook
+   DB_USER=booknook
    DB_PASSWORD=<change-to-secure-password>
-   DB_NAME=readingnook
+   DB_NAME=booknook
    SECRET_KEY=<generate-with-python>
    FLASK_ENV=production
    SESSION_COOKIE_SECURE=True
@@ -121,7 +121,7 @@ For detailed Docker and production deployment instructions, see [DOCKER_DEPLOYME
 ## Project Structure
 
 ```
-readingnook/
+booknook/
 ├── app.py                    # Main Flask application and routes
 ├── init_db.py                # Database initialization script
 ├── requirements.txt          # Python dependencies

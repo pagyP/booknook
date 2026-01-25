@@ -14,7 +14,7 @@ For production deployments using pre-built images from GHCR:
 docker compose -f docker-compose.prod.yml up
 ```
 
-This uses `ghcr.io/pagyp/readingnook:latest` (or specify a version tag).
+This uses `ghcr.io/pagyp/booknook:latest` (or specify a version tag).
 
 ---
 
@@ -91,10 +91,10 @@ docker compose logs -f web
 docker compose logs -f db
 
 # Backup database
-docker compose exec db pg_dump -U readingnook readingnook > backup.sql
+docker compose exec db pg_dump -U booknook booknook > backup.sql
 
 # Restore database
-docker compose exec -T db psql -U readingnook readingnook < backup.sql
+docker compose exec -T db psql -U booknook booknook < backup.sql
 
 # Scale workers (edit docker compose.yml gunicorn command)
 # --workers 8  # for high traffic
@@ -109,7 +109,7 @@ docker compose down -v
 ## GitHub Container Registry (GHCR) Images
 
 ### Available Image Tags
-Images are automatically built and pushed to `ghcr.io/pagyp/readingnook` by GitHub Actions:
+Images are automatically built and pushed to `ghcr.io/pagyp/booknook` by GitHub Actions:
 - `latest` - Latest build from main branch
 - `main` - Current main branch (same as latest)
 - `v*` - Semantic version tags (e.g., `v1.0.0`, `v1.0`, `v1`)
@@ -118,9 +118,9 @@ Images are automatically built and pushed to `ghcr.io/pagyp/readingnook` by GitH
 In `docker-compose.prod.yml`, specify a version:
 ```yaml
 web:
-  image: ghcr.io/pagyp/readingnook:v1.0.0  # Specific version
+  image: ghcr.io/pagyp/booknook:v1.0.0  # Specific version
   # or
-  image: ghcr.io/pagyp/readingnook:latest   # Always latest
+  image: ghcr.io/pagyp/booknook:latest   # Always latest
 ```
 
 ### Image Builds
@@ -140,7 +140,7 @@ The app runs on port 8000. Configure your external reverse proxy (nginx, caddy, 
 
 **Example nginx upstream block:**
 ```nginx
-upstream readingnook {
+upstream booknook {
     server localhost:8000;
 }
 
@@ -149,7 +149,7 @@ server {
     server_name your-domain.com;
     
     location / {
-        proxy_pass http://readingnook;
+        proxy_pass http://booknook;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -169,7 +169,7 @@ gunicorn --bind 0.0.0.0:8000 --workers 8 --timeout 60 ...
 ### Database Optimization
 ```bash
 # Connect to database
-docker compose exec db psql -U readingnook readingnook
+docker compose exec db psql -U booknook booknook
 
 # Create indexes for better performance
 CREATE INDEX idx_book_user_id ON book(user_id);
@@ -190,7 +190,7 @@ docker compose ps
 # Should show db as "Up"
 
 # Test connection
-docker compose exec db psql -U readingnook -c "SELECT 1"
+docker compose exec db psql -U booknook -c "SELECT 1"
 ```
 
 ### High memory usage
@@ -212,17 +212,17 @@ docker compose exec web python migrate.py
 ### Database Backup
 ```bash
 # Full backup
-docker compose exec db pg_dump -U readingnook readingnook > backup-$(date +%Y%m%d).sql
+docker compose exec db pg_dump -U booknook booknook > backup-$(date +%Y%m%d).sql
 
 # Automated daily backup
 # Add to crontab:
-0 2 * * * docker compose -f /path/to/docker compose.yml exec -T db pg_dump -U readingnook readingnook > /backups/readingnook-$(date +\%Y\%m\%d).sql
+0 2 * * * docker compose -f /path/to/docker compose.yml exec -T db pg_dump -U booknook booknook > /backups/booknook-$(date +\%Y\%m\%d).sql
 ```
 
 ### Volume Backup
 ```bash
 # Backup PostgreSQL volume
-docker run --rm -v readingnook_postgres_data:/data -v $(pwd):/backup \
+docker run --rm -v booknook_postgres_data:/data -v $(pwd):/backup \
   alpine tar czf /backup/postgres-backup.tar.gz /data
 ```
 
