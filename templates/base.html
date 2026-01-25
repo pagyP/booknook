@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Reading Nook{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75' font-family='serif'>📚</text></svg>">
+    <style>
+        /* 
+         * Standardized Breakpoints:
+         * Mobile: < 480px
+         * Tablet: 480px - 767px
+         * Desktop: 768px - 1439px
+         * Large Desktop: >= 1440px
+         */
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Georgia', 'Garamond', serif;
+            color: #3E2723;
+            background: linear-gradient(135deg, #D4A574 0%, #A0522D 100%);
+            background-image: 
+                linear-gradient(135deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.5) 100%),
+                url('/static/images/cosy-library.jpg');
+            background-attachment: fixed;
+            background-size: cover;
+            background-position: center;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .container {
+            margin: 0 auto;
+            background: rgba(245, 235, 224, 0.85);
+            border-radius: 0;
+            box-shadow: none;
+            overflow: hidden;
+            min-height: 100vh;
+            max-width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Mobile: full width */
+        /* Mobile: full width, no frills */
+        @media (max-width: 479px) {
+            .container {
+                max-width: 100%;
+                padding: 0;
+            }
+        }
+        
+        /* Tablet: good width with small margins */
+        @media (min-width: 480px) and (max-width: 767px) {
+            .container {
+                max-width: 95%;
+                border-radius: 10px;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            }
+        }
+        
+        /* Desktop: responsive max-width */
+        @media (min-width: 768px) and (max-width: 1439px) {
+            .container {
+                max-width: calc(100% - 40px);
+                border-radius: 10px;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            }
+        }
+        
+        /* Large Desktop: constrained responsive max-width */
+        @media (min-width: 1440px) {
+            .container {
+                max-width: calc(100% - 80px);
+                border-radius: 10px;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            }
+        }
+        
+        header {
+            background: linear-gradient(135deg, rgba(139, 69, 19, 0.75) 0%, rgba(160, 82, 45, 0.75) 100%);
+            color: #F5EBE0;
+            padding: 40px 20px;
+            text-align: center;
+            border-bottom: 3px solid #C9A961;
+            box-shadow: inset 0 -2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 5px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        
+        header p {
+            font-size: 0.95em;
+            opacity: 0.95;
+            font-style: italic;
+        }
+        
+        nav {
+            background: #DCC9B8;
+            padding: 15px 20px;
+            border-bottom: 2px solid #A0522D;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        nav a {
+            color: #8B4513;
+            text-decoration: none;
+            margin-right: 20px;
+            font-weight: 600;
+            transition: color 0.3s;
+            font-size: 0.95em;
+        }
+        
+        nav a:hover {
+            color: #6B3410;
+        }
+        
+        nav span[style*="margin-left: auto"] {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .content {
+            padding: 30px 20px;
+        }
+        
+        /* Tablet and larger screens: increase padding */
+        @media (min-width: 480px) {
+            .content {
+                padding: 40px 40px;
+            }
+        }
+        
+        /* Desktop and larger screens: further increase padding */
+        @media (min-width: 768px) {
+            .content {
+                padding: 40px 60px;
+            }
+        }
+        
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .alert.success {
+            background: #D4F1D4;
+            color: #6B3410;
+            border: 1px solid #A8D5A8;
+        }
+        
+        .alert.error {
+            background: #F8D7DA;
+            color: #5C2E2E;
+            border: 1px solid #E8B4B8;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #A0522D;
+            color: #F5EBE0;
+        }
+        
+        .btn-primary:hover {
+            background: #6B3410;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-secondary {
+            background: #8B7355;
+            color: #F5EBE0;
+        }
+        
+        .btn-secondary:hover {
+            background: #6B5644;
+        }
+        
+        .btn-danger {
+            background: #A85C47;
+            color: #F5EBE0;
+        }
+        
+        .btn-danger:hover {
+            background: #8B4733;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Reading Nook</h1>
+            <p>Track the books you've read</p>
+        </header>
+        
+        <nav>
+            <a href="{{ url_for('index') }}">Home</a>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('add_book') }}">+ Add Book</a>
+                <span style="margin-left: auto;">
+                    <span style="color: #666;">Welcome, {{ current_user.username }}!</span>
+                    <a href="{{ url_for('settings') }}" style="margin-left: 15px;">Settings</a>
+                    <a href="{{ url_for('logout') }}" style="margin-left: 15px;">Logout</a>
+                </span>
+            {% else %}
+                <span style="margin-left: auto;">
+                    <a href="{{ url_for('login') }}">Log In</a>
+                    <a href="{{ url_for('register') }}" style="margin-left: 15px;">Sign Up</a>
+                </span>
+            {% endif %}
+        </nav>
+        
+        <div class="content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="alert {{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</body>
+</html>

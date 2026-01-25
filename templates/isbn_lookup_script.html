@@ -1,0 +1,89 @@
+<script>
+    document.getElementById('lookupBtn').addEventListener('click', async function(e) {
+        e.preventDefault();
+        
+        const isbn = document.getElementById('isbnInput').value.trim();
+        const lookupBtn = document.getElementById('lookupBtn');
+        const spinner = document.getElementById('lookupSpinner');
+        const message = document.getElementById('lookupMessage');
+        
+        if (!isbn) {
+            message.textContent = 'Please enter an ISBN first';
+            message.className = 'isbn-lookup-message error';
+            message.style.display = 'block';
+            return;
+        }
+        
+        // Show loading state
+        lookupBtn.disabled = true;
+        spinner.style.display = 'block';
+        message.style.display = 'none';
+        
+        try {
+            const response = await fetch('/api/book-lookup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ isbn: isbn })
+            });
+            
+            spinner.style.display = 'none';
+            
+            if (!response.ok) {
+                const error = await response.json();
+                message.textContent = error.error || 'Book not found';
+                message.className = 'isbn-lookup-message error';
+                message.style.display = 'block';
+                lookupBtn.disabled = false;
+                return;
+            }
+            
+            const bookData = await response.json();
+            
+            // Populate form fields
+            if (bookData.title) {
+                document.getElementById('title').value = bookData.title;
+            }
+            if (bookData.author) {
+                document.getElementById('author').value = bookData.author;
+            }
+            // Always populate genre, even if empty
+            if (bookData.hasOwnProperty('genre')) {
+                document.getElementById('genre').value = bookData.genre || '';
+            }
+            
+            // Display cover image if available
+            if (bookData.cover_url) {
+                document.getElementById('coverPreviewImage').src = bookData.cover_url;
+                document.getElementById('coverUrlInput').value = bookData.cover_url;
+                document.getElementById('coverPreviewSection').style.display = 'block';
+            } else {
+                document.getElementById('coverPreviewSection').style.display = 'none';
+            }
+            
+            // Show success message
+            message.textContent = `✓ Found "${bookData.title}" by ${bookData.author}`;
+            message.className = 'isbn-lookup-message success';
+            message.style.display = 'block';
+            
+            lookupBtn.disabled = false;
+            
+        } catch (error) {
+            spinner.style.display = 'none';
+            message.textContent = 'Error connecting to Open Library. Please try again.';
+            message.className = 'isbn-lookup-message error';
+            message.style.display = 'block';
+            lookupBtn.disabled = false;
+            console.error('Lookup error:', error);
+        }
+    });
+    
+    // Also allow lookup by pressing Enter in ISBN field
+    document.getElementById('isbnInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('lookupBtn').click();
+        }
+    });
+</script>

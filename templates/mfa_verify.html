@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Verify Authenticator Code - Reading Nook{% endblock %}
+
+{% block extra_css %}
+<style>
+    .mfa-verify-container {
+        max-width: 500px;
+        margin: 40px auto;
+        padding: 30px;
+        background: #F5EBE0;
+        border-radius: 8px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        border: 1px solid #DCC9B8;
+    }
+    
+    .mfa-verify-container h2 {
+        color: #8B4513;
+        margin-bottom: 10px;
+        text-align: center;
+        font-family: 'Georgia', serif;
+    }
+    
+    .mfa-verify-container .subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 30px;
+        font-size: 0.95em;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #5C4033;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #BFA089;
+        border-radius: 4px;
+        font-size: 1em;
+        box-sizing: border-box;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #8B4513;
+        box-shadow: 0 0 4px rgba(139, 69, 19, 0.2);
+    }
+    
+    .select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #BFA089;
+        border-radius: 4px;
+        font-size: 1em;
+        box-sizing: border-box;
+        background: white;
+    }
+    
+    .help-text {
+        color: #8B4513;
+        font-size: 0.9em;
+        margin-top: 8px;
+    }
+    
+    .error-list {
+        color: #C62828;
+        margin-top: 8px;
+        font-size: 0.9em;
+    }
+    
+    .error-list ul {
+        margin: 4px 0;
+        padding-left: 20px;
+    }
+    
+    .error-list li {
+        margin: 4px 0;
+    }
+    
+    .info-box {
+        background: #EDE5D9;
+        border-left: 4px solid #6B3410;
+        padding: 15px;
+        margin-bottom: 25px;
+        border-radius: 3px;
+    }
+    
+    .info-box p {
+        margin: 0;
+        color: #5C4033;
+    }
+    
+    .divider {
+        text-align: center;
+        margin: 25px 0;
+        position: relative;
+    }
+    
+    .divider::before {
+        content: '';
+        display: block;
+        height: 1px;
+        background: #DCC9B8;
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+    }
+    
+    .divider-text {
+        background: #F5EBE0;
+        position: relative;
+        display: inline-block;
+        padding: 0 10px;
+        color: #8B4513;
+        font-weight: 600;
+    }
+    
+    .btn {
+        background: #8B4513;
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 600;
+        transition: background 0.3s;
+        width: 100%;
+    }
+    
+    .btn:hover {
+        background: #6B3410;
+    }
+    
+    .recovery-code-info {
+        background: #F3E5F5;
+        border-left: 4px solid #7B1FA2;
+        padding: 15px;
+        margin-top: 25px;
+        border-radius: 3px;
+    }
+    
+    .recovery-code-info p {
+        margin: 8px 0;
+        color: #4A148C;
+        font-size: 0.95em;
+    }
+    
+    .recovery-code-info strong {
+        color: #6A1B9A;
+    }
+    
+    .recovery-code-form {
+        margin-top: 15px;
+    }
+    
+    .recovery-code-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #5C4033;
+    }
+    
+    .recovery-submit-btn {
+        margin-top: 10px;
+    }
+    
+    @media (max-width: 768px) {
+        .mfa-verify-container {
+            margin: 20px;
+            padding: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mfa-verify-container">
+    <h2>🔐 Verify Authenticator Code</h2>
+    <p class="subtitle">Enter your 6-digit code to continue</p>
+    
+    <div class="info-box">
+        <p>Your authenticator app should show a 6-digit code that changes every 30 seconds. Enter it below to verify your identity.</p>
+    </div>
+    
+    <form method="POST" novalidate>
+        {{ mfa_form.hidden_tag() }}
+        
+        <div class="form-group">
+            {{ mfa_form.totp_code.label }}
+            {{ mfa_form.totp_code(class="form-control", placeholder="000000", autocomplete="off", autofocus="autofocus") }}
+            {% if mfa_form.totp_code.errors %}
+                <div class="error-list">
+                    <ul>
+                    {% for error in mfa_form.totp_code.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            {{ mfa_form.trust_device.label }}
+            {{ mfa_form.trust_device(class="select") }}
+            <p class="help-text">Trusting this device will skip MFA verification for 30 days.</p>
+        </div>
+        
+        {{ mfa_form.submit(class="btn", value="Verify") }}
+    </form>
+    
+    <div class="divider">
+        <span class="divider-text">or</span>
+    </div>
+    
+    <div class="recovery-code-info">
+        <p><strong>Lost your authenticator app?</strong></p>
+        <p>You can use a recovery code to log in and disable MFA. Each recovery code can only be used once.</p>
+        
+        <div class="form-group recovery-code-form">
+            <form method="POST" novalidate>
+                {{ mfa_form.hidden_tag() }}
+                {{ mfa_form.recovery_code.label("Recovery Code") }}
+                {{ mfa_form.recovery_code(class="form-control", placeholder="XXXX-XXXX-XXXX") }}
+                {% if mfa_form.recovery_code.errors %}
+                    <div class="error-list">
+                        <ul>
+                        {% for error in mfa_form.recovery_code.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                <button type="submit" class="btn recovery-submit-btn">Use Recovery Code</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

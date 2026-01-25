@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Save Your Recovery Codes - Reading Nook{% endblock %}
+
+{% block extra_css %}
+<style>
+    .recovery-container {
+        max-width: 600px;
+        margin: 40px auto;
+        padding: 30px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .recovery-container h2 {
+        color: #667eea;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    
+    .warning-box {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 30px;
+        color: #856404;
+    }
+    
+    .warning-box h3 {
+        margin-top: 0;
+        color: #ff6b6b;
+    }
+    
+    .recovery-codes {
+        background: #f8f9fa;
+        border: 2px solid #667eea;
+        border-radius: 5px;
+        padding: 20px;
+        margin-bottom: 30px;
+        font-family: monospace;
+        font-size: 1.1em;
+    }
+    
+    .code-item {
+        background: white;
+        padding: 10px;
+        margin: 8px 0;
+        border-radius: 3px;
+        border-left: 4px solid #667eea;
+    }
+    
+    .recovery-instructions {
+        background: #e7f3ff;
+        border-left: 4px solid #2196F3;
+        padding: 15px;
+        margin-bottom: 30px;
+        border-radius: 3px;
+    }
+    
+    .recovery-instructions ol {
+        margin: 10px 0;
+        padding-left: 25px;
+    }
+    
+    .recovery-instructions li {
+        margin: 8px 0;
+    }
+    
+    .btn {
+        background: #667eea;
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+        transition: background 0.3s;
+    }
+    
+    .btn:hover {
+        background: #5568d3;
+    }
+    
+    .btn-group {
+        text-align: center;
+        margin-top: 30px;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        margin-left: 10px;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+
+    @media (max-width: 768px) {
+        .recovery-container {
+            margin: 20px;
+            padding: 20px;
+        }
+        
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .btn, .btn-secondary {
+            width: 100%;
+            margin-left: 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="recovery-container">
+    <h2>Save Your Recovery Codes</h2>
+    
+    <div style="background: #e7f3ff; border: 2px solid #2196F3; border-radius: 5px; padding: 15px; margin-bottom: 20px;">
+        <p style="margin: 0; font-size: 0.95em;"><strong>Account Email:</strong></p>
+        <p style="margin: 8px 0 0 0; font-size: 1.1em; font-weight: 600; color: #1976D2;">{{ user.email }}</p>
+        <p style="margin: 8px 0 0 0; font-size: 0.85em; color: #555;">
+            <em>Make sure this is correct. You'll use this email to log in and recover your account.</em>
+        </p>
+    </div>
+    
+    <div class="warning-box">
+        <h3>⚠️ Important: Save these codes and verify your email!</h3>
+        <p><strong>First, check the email address displayed above.</strong> This is the address you'll use to log in and recover your account. If it's incorrect, you can change it later in your account settings.</p>
+        <p style="margin-top: 15px;">These recovery codes are your backup way to access your account if you forget your password. <strong>This is the only time we'll show you these codes.</strong></p>
+        <p>Store them somewhere safe, such as:</p>
+        <ul>
+            <li>A password manager (Bitwarden, 1Password, KeePass, etc.)</li>
+            <li>A printed copy in a safe location</li>
+            <li>A secure note in your phone or computer</li>
+        </ul>
+    </div>
+    
+    <div class="recovery-codes">
+        <p><strong>Your Recovery Codes:</strong></p>
+        {% for code in codes %}
+            <div class="code-item">{{ code }}</div>
+        {% endfor %}
+        <p style="margin-top: 20px; font-size: 0.9em; color: #666;">
+            <em>Note: Recovery codes are stored securely and cannot be retrieved once you leave this page.</em>
+        </p>
+    </div>
+    
+    <div class="recovery-instructions">
+        <h4>How to use recovery codes:</h4>
+        <ol>
+            <li>Go to the login page and click "Recover your account"</li>
+            <li>Enter your email address and one of these recovery codes</li>
+            <li>You'll be able to create a new password</li>
+            <li>Each code can only be used once</li>
+        </ol>
+    </div>
+    
+    <div class="btn-group">
+        <a href="{{ url_for('settings') }}" class="btn" style="background: #ff9800; margin-bottom: 10px;">Change Email Now</a>
+        <a href="{{ url_for('index') }}" class="btn">Continue to Home</a>
+    </div>
+</div>
+{% endblock %}

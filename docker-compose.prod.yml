@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:18.1-alpine3.22
+    container_name: readingnook_db
+    environment:
+      POSTGRES_USER: ${DB_USER:-readingnook}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_DB: ${DB_NAME:-readingnook}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-readingnook}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - readingnook_network
+    restart: unless-stopped
+
+  web:
+    image: ghcr.io/pagyp/readingnook:latest
+    container_name: readingnook_app
+    environment:
+      FLASK_DEBUG: ${FLASK_DEBUG:-False}
+      FLASK_ENV: ${FLASK_ENV:-production}
+      SECRET_KEY: ${SECRET_KEY}
+      SQLALCHEMY_DATABASE_URI: postgresql+psycopg://${DB_USER:-readingnook}:${DB_PASSWORD:-changeme}@db:5432/${DB_NAME:-readingnook}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-True}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - readingnook_network
+    restart: unless-stopped
+    command: sh -c "python /app/init_db.py && gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 60 --access-logfile - --error-logfile - app:app"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request, sys; urllib.request.urlopen('http://localhost:8000/login', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  postgres_data:
+
+networks:
+  readingnook_network:
+    driver: bridge

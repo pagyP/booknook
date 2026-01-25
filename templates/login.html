@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Log In - Reading Nook{% endblock %}
+
+{% block extra_css %}
+<style>
+    .auth-container {
+        max-width: 400px;
+        margin: 40px auto;
+        padding: 30px;
+        background: #F5EBE0;
+        border-radius: 8px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        border: 1px solid #DCC9B8;
+    }
+    
+    .auth-container h2 {
+        color: #8B4513;
+        margin-bottom: 30px;
+        text-align: center;
+        font-family: 'Georgia', serif;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #5C4033;
+    }
+    
+    input[type="email"],
+    input[type="password"] {
+        width: 100%;
+        padding: 12px 14px;
+        border: 2px solid #DCC9B8;
+        border-radius: 5px;
+        font-family: 'Georgia', serif;
+        font-size: 1.05em;
+        box-sizing: border-box;
+        background: #FEFDFB;
+    }
+    
+    input[type="email"]:focus,
+    input[type="password"]:focus {
+        outline: none;
+        border-color: #6B3410;
+        box-shadow: 0 0 5px rgba(107, 52, 16, 0.2);
+    }
+    
+    .btn {
+        width: 100%;
+        padding: 10px;
+        margin-top: 10px;
+    }
+    
+    .auth-link {
+        text-align: center;
+        margin-top: 20px;
+    }
+    
+    .auth-link a {
+        color: #6B3410;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .auth-link a:hover {
+        color: #5C2E2E;
+        text-decoration: underline;
+    }
+    
+    .error-list {
+        background: #F8D7DA;
+        color: #5C2E2E;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        border: 1px solid #E8B4B8;
+    }
+    
+    .error-list ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <h2>🔐 Log In</h2>
+    
+    <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+        
+        <div class="form-group">
+            {{ form.email.label }}
+            {{ form.email(class="form-control") }}
+            {% if form.email.errors %}
+                <div class="error-list">
+                    <ul>
+                    {% for error in form.email.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.password.label }}
+            {{ form.password(class="form-control") }}
+            {% if form.password.errors %}
+                <div class="error-list">
+                    <ul>
+                    {% for error in form.password.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+        
+        {{ form.submit(class="btn btn-primary") }}
+    </form>
+    
+    <div class="auth-link">
+        Don't have an account? <a href="{{ url_for('register') }}">Sign up here</a>
+    </div>
+    
+    <div class="auth-link" style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 20px;">
+        Forgot your password? <a href="{{ url_for('forgot_password') }}">Recover your account</a>
+    </div>
+</div>
+{% endblock %}

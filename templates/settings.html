@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block title %}Account Settings - Reading Nook{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-container {
+        max-width: 500px;
+        margin: 40px auto;
+        padding: 30px;
+        background: #F5EBE0;
+        border-radius: 8px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        border: 1px solid #DCC9B8;
+    }
+    
+    .settings-container h2 {
+        color: #8B4513;
+        margin-bottom: 30px;
+        text-align: center;
+        font-family: 'Georgia', serif;
+    }
+    
+    .info-box {
+        background: #EDE5D9;
+        border-left: 4px solid #6B3410;
+        padding: 15px;
+        margin-bottom: 25px;
+        border-radius: 3px;
+    }
+    
+    .info-box p {
+        margin: 0;
+        color: #5C4033;
+    }
+    
+    .info-box strong {
+        color: #8B4513;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #5C4033;
+    }
+    
+    input[type="email"],
+    input[type="password"] {
+        width: 100%;
+        padding: 12px 14px;
+        border: 2px solid #DCC9B8;
+        border-radius: 5px;
+        font-family: 'Georgia', serif;
+        font-size: 1.05em;
+        box-sizing: border-box;
+        background: #FEFDFB;
+    }
+    
+    input[type="email"]:focus,
+    input[type="password"]:focus {
+        outline: none;
+        border-color: #6B3410;
+        box-shadow: 0 0 5px rgba(107, 52, 16, 0.2);
+    }
+    
+    .help-text {
+        font-size: 0.85em;
+        color: #8B7355;
+        margin-top: 5px;
+    }
+    
+    .error-list {
+        background: #F8D7DA;
+        color: #5C2E2E;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        border: 1px solid #E8B4B8;
+    }
+    
+    .error-list ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+    
+    .btn {
+        width: 100%;
+        padding: 12px;
+        margin-top: 10px;
+        background: #6B3410;
+        color: #F5EBE0;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 600;
+        transition: background 0.3s;
+    }
+    
+    .btn:hover {
+        background: #8B4513;
+    }
+    
+    .current-email {
+        background: #F5E6D3;
+        border-left: 4px solid #D4A574;
+        padding: 15px;
+        margin-bottom: 25px;
+        border-radius: 3px;
+    }
+    
+    .current-email p {
+        margin: 0;
+        color: #5C4033;
+    }
+    
+    .current-email .email-value {
+        font-size: 1.15em;
+        font-weight: 600;
+        color: #ff9800;
+        margin-top: 8px;
+    }
+    
+    .security-section {
+        margin-top: 40px;
+        padding-top: 30px;
+        border-top: 2px solid #DCC9B8;
+    }
+    
+    .security-section h3 {
+        color: #8B4513;
+        font-size: 1.3em;
+        margin-bottom: 20px;
+        font-family: 'Georgia', serif;
+    }
+    
+    .mfa-status-box {
+        background: #EDE5D9;
+        border-left: 4px solid #6B3410;
+        padding: 15px;
+        margin-bottom: 25px;
+        border-radius: 3px;
+    }
+    
+    .mfa-status-box p {
+        margin: 8px 0;
+        color: #5C4033;
+    }
+    
+    .mfa-status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9em;
+        margin-top: 8px;
+    }
+    
+    .mfa-enabled {
+        background: #C8E6C9;
+        color: #2E7D32;
+    }
+    
+    .mfa-disabled {
+        background: #FFCCBC;
+        color: #D84315;
+    }
+    
+    .mfa-info {
+        background: #F3E5F5;
+        border-left: 4px solid #7B1FA2;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 3px;
+    }
+    
+    .mfa-info p {
+        margin: 8px 0;
+        color: #4A148C;
+    }
+    
+    .button-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 15px;
+    }
+    
+    .btn-small {
+        padding: 10px 15px;
+        font-size: 0.9em;
+    }
+    
+    .btn-secondary {
+        background: #9E9E9E;
+    }
+    
+    .btn-secondary:hover {
+        background: #757575;
+    }
+    
+    .btn-danger {
+        background: #D32F2F;
+    }
+    
+    .btn-danger:hover {
+        background: #B71C1C;
+    }
+    
+    @media (max-width: 768px) {
+        .settings-container {
+            margin: 20px;
+            padding: 20px;
+        }
+        
+        .button-group {
+            flex-direction: column;
+        }
+        
+        .button-group .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <h2>⚙️ Account Settings</h2>
+    
+    <!-- Email Change Section -->
+    <div class="current-email">
+        <p><strong>Current Email Address:</strong></p>
+        <div class="email-value">{{ current_user.email }}</div>
+    </div>
+    
+    <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+        
+        <div class="info-box">
+            <p>To change your email address, enter your new email and confirm with your current password. Your new email will be used for login and account recovery.</p>
+        </div>
+        
+        <div class="form-group">
+            {{ form.new_email.label }}
+            {{ form.new_email(class="form-control") }}
+            {% if form.new_email.errors %}
+                <div class="error-list">
+                    <ul>
+                    {% for error in form.new_email.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            <p class="help-text">Must be a valid email address different from your current email.</p>
+        </div>
+        
+        <div class="form-group">
+            {{ form.password.label }}
+            {{ form.password(class="form-control") }}
+            {% if form.password.errors %}
+                <div class="error-list">
+                    <ul>
+                    {% for error in form.password.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            <p class="help-text">Enter your current password to confirm this change.</p>
+        </div>
+        
+        {{ form.submit(class="btn") }}
+    </form>
+    
+    <!-- MFA Section -->
+    <div class="security-section">
+        <h3>🔐 Multi-Factor Authentication (MFA)</h3>
+        
+        <div class="mfa-info">
+            <p><strong>What is MFA?</strong> Multi-Factor Authentication adds an extra layer of security to your account by requiring a 6-digit code from an authenticator app when you log in.</p>
+            <p><strong>Recovery Codes:</strong> If you enable MFA and lose access to your authenticator app, you can use your recovery codes to regain access. Recovery codes can also be used if you forget your password.</p>
+        </div>
+        
+        {% if mfa_status %}
+            <div class="mfa-status-box">
+                <p><strong>Status:</strong> 
+                    {% if mfa_status.enabled %}
+                        <span class="mfa-status-badge mfa-enabled">✓ Enabled</span>
+                    {% else %}
+                        <span class="mfa-status-badge mfa-disabled">✗ Disabled</span>
+                    {% endif %}
+                </p>
+                
+                {% if mfa_status.last_authenticated %}
+                    <p><strong>Last Authenticated:</strong> {{ mfa_status.last_authenticated.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                {% endif %}
+                
+                {% if mfa_status.trusted_device_count > 0 %}
+                    <p><strong>Trusted Devices:</strong> {{ mfa_status.trusted_device_count }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="button-group">
+                {% if not mfa_status.enabled %}
+                    <a href="{{ url_for('setup_mfa') }}" class="btn btn-small">Enable MFA</a>
+                {% else %}
+                    <a href="{{ url_for('disable_mfa') }}" class="btn btn-small btn-danger">Disable MFA</a>
+                {% endif %}
+                
+                {% if mfa_status.enabled %}
+                    <a href="{{ url_for('trusted_devices') }}" class="btn btn-small btn-secondary">Manage Devices</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

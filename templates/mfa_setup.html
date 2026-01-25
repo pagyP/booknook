@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}Set Up Multi-Factor Authentication - Reading Nook{% endblock %}
+
+{% block extra_css %}
+<style>
+    .mfa-setup-container {
+        max-width: 600px;
+        margin: 40px auto;
+        padding: 30px;
+        background: #F5EBE0;
+        border-radius: 8px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        border: 1px solid #DCC9B8;
+    }
+    
+    .mfa-setup-container h2 {
+        color: #8B4513;
+        margin-bottom: 10px;
+        text-align: center;
+        font-family: 'Georgia', serif;
+    }
+    
+    .mfa-setup-container .subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 30px;
+        font-size: 0.95em;
+    }
+    
+    .step {
+        margin-bottom: 30px;
+    }
+    
+    .step-number {
+        display: inline-block;
+        background: #8B4513;
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        text-align: center;
+        line-height: 30px;
+        font-weight: bold;
+        margin-right: 10px;
+    }
+    
+    .step-title {
+        display: inline-block;
+        color: #5C4033;
+        font-weight: 600;
+        font-size: 1.05em;
+    }
+    
+    .step-content {
+        margin-top: 15px;
+        margin-left: 40px;
+        padding: 15px;
+        background: #EDE5D9;
+        border-radius: 4px;
+        border-left: 3px solid #8B4513;
+    }
+    
+    .step-content p {
+        margin: 8px 0;
+        color: #5C4033;
+    }
+    
+    .qr-code-container {
+        text-align: center;
+        margin: 20px 0;
+        padding: 20px;
+        background: white;
+        border-radius: 4px;
+        border: 1px solid #DCC9B8;
+    }
+    
+    .qr-code-container img {
+        max-width: 250px;
+        margin: 0 auto;
+    }
+    
+    .secret-box {
+        background: #FFFBF0;
+        border: 1px solid #E6D5C0;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 15px 0;
+        text-align: center;
+    }
+    
+    .secret-label {
+        color: #8B4513;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+    
+    .secret-code {
+        font-family: 'Courier New', monospace;
+        font-size: 1.1em;
+        letter-spacing: 2px;
+        color: #2C1810;
+        word-break: break-all;
+        user-select: all;
+    }
+    
+    .warning-box {
+        background: #FFE0B2;
+        border-left: 4px solid #FF6F00;
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 3px;
+    }
+    
+    .warning-box p {
+        margin: 8px 0;
+        color: #E65100;
+    }
+    
+    .warning-box strong {
+        color: #BF360C;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #5C4033;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #BFA089;
+        border-radius: 4px;
+        font-size: 1em;
+        box-sizing: border-box;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #8B4513;
+        box-shadow: 0 0 4px rgba(139, 69, 19, 0.2);
+    }
+    
+    .help-text {
+        color: #8B4513;
+        font-size: 0.9em;
+        margin-top: 8px;
+    }
+    
+    .error-list {
+        color: #C62828;
+        margin-top: 8px;
+        font-size: 0.9em;
+    }
+    
+    .error-list ul {
+        margin: 4px 0;
+        padding-left: 20px;
+    }
+    
+    .error-list li {
+        margin: 4px 0;
+    }
+    
+    .btn {
+        background: #8B4513;
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 600;
+        transition: background 0.3s;
+    }
+    
+    .btn:hover {
+        background: #6B3410;
+    }
+    
+    .btn-block {
+        width: 100%;
+        display: block;
+    }
+    
+    .back-link {
+        text-align: center;
+        margin-top: 20px;
+    }
+    
+    .back-link a {
+        color: #8B4513;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .back-link a:hover {
+        text-decoration: underline;
+    }
+    
+    @media (max-width: 768px) {
+        .mfa-setup-container {
+            margin: 20px;
+            padding: 20px;
+        }
+        
+        .qr-code-container img {
+            max-width: 200px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mfa-setup-container">
+    <h2>🔐 Set Up Multi-Factor Authentication</h2>
+    <p class="subtitle">Add extra security to your account with a 6-digit code</p>
+    
+    <div class="step">
+        <span class="step-number">1</span>
+        <span class="step-title">Download an Authenticator App</span>
+        <div class="step-content">
+            <p>Install one of these authenticator apps on your phone:</p>
+            <ul>
+                <li><strong>Google Authenticator</strong> (iOS & Android)</li>
+                <li><strong>Microsoft Authenticator</strong> (iOS & Android)</li>
+                <li><strong>Authy</strong> (iOS & Android & Desktop)</li>
+                <li><strong>FreeOTP</strong> (iOS & Android)</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="step">
+        <span class="step-number">2</span>
+        <span class="step-title">Scan This QR Code</span>
+        <div class="step-content">
+            <p>Open your authenticator app and scan this QR code:</p>
+            <div class="qr-code-container">
+                <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code for authenticator">
+            </div>
+            <p><strong>Can't scan?</strong> Enter this code manually in your authenticator app:</p>
+            <div class="secret-box">
+                <div class="secret-label">Manual Entry Code:</div>
+                <div class="secret-code">{{ secret }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="step">
+        <span class="step-number">3</span>
+        <span class="step-title">Verify Your Setup</span>
+        <div class="step-content">
+            <p>Your authenticator app should now show a 6-digit code that changes every 30 seconds. Enter it below to confirm:</p>
+            
+            <form method="POST" novalidate>
+                {{ form.hidden_tag() }}
+                
+                <div class="form-group">
+                    {{ form.totp_code.label }}
+                    {{ form.totp_code(class="form-control", placeholder="000000", autocomplete="off", autofocus=true) }}
+                    {% if form.totp_code.errors %}
+                        <div class="error-list">
+                            <ul>
+                            {% for error in form.totp_code.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                    <p class="help-text">⏱️ Enter the 6-digit code from your authenticator app. Codes refresh every 30 seconds, so enter quickly!</p>
+                </div>
+                
+                <div class="form-group">
+                    {{ form.password.label }}
+                    {{ form.password(class="form-control", autocomplete="current-password") }}
+                    {% if form.password.errors %}
+                        <div class="error-list">
+                            <ul>
+                            {% for error in form.password.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                    <p class="help-text">Enter your account password to enable MFA.</p>
+                </div>
+                
+                <div class="warning-box">
+                    <p><strong>⚠️ Important:</strong> After enabling MFA, save your recovery codes somewhere safe. You can use them to access your account if you lose your authenticator app.</p>
+                </div>
+                
+                {{ form.submit(class="btn btn-block", value="Verify and Enable MFA") }}
+            </form>
+        </div>
+    </div>
+    
+    <div class="back-link">
+        <a href="{{ url_for('settings') }}">← Back to Settings</a>
+    </div>
+</div>
+{% endblock %}

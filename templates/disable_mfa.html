@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Disable MFA - Reading Nook{% endblock %}
+
+{% block extra_css %}
+<style>
+    .mfa-disable-container {
+        max-width: 500px;
+        margin: 40px auto;
+        padding: 30px;
+        background: #F5EBE0;
+        border-radius: 8px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        border: 1px solid #DCC9B8;
+    }
+    
+    .mfa-disable-container h2 {
+        color: #8B4513;
+        margin-bottom: 10px;
+        text-align: center;
+        font-family: 'Georgia', serif;
+    }
+    
+    .warning-box {
+        background: #fff3cd;
+        border-left: 4px solid #ff9800;
+        padding: 15px;
+        margin-bottom: 25px;
+        border-radius: 3px;
+    }
+    
+    .warning-box p {
+        margin: 8px 0;
+        color: #856404;
+    }
+    
+    .warning-box strong {
+        color: #6b3c0d;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #5C4033;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #BFA089;
+        border-radius: 4px;
+        font-size: 1em;
+        box-sizing: border-box;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #8B4513;
+        box-shadow: 0 0 4px rgba(139, 69, 19, 0.2);
+    }
+    
+    .error-list {
+        color: #C62828;
+        margin-top: 8px;
+        font-size: 0.9em;
+    }
+    
+    .error-list ul {
+        margin: 4px 0;
+        padding-left: 20px;
+    }
+    
+    .error-list li {
+        margin: 4px 0;
+    }
+    
+    .btn {
+        background: #d32f2f;
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 600;
+        transition: background 0.3s;
+        width: 100%;
+    }
+    
+    .btn:hover {
+        background: #b71c1c;
+    }
+    
+    .btn-cancel {
+        background: #8B4513;
+        margin-top: 10px;
+    }
+    
+    .btn-cancel:hover {
+        background: #6B3410;
+    }
+    
+    .info-text {
+        text-align: center;
+        margin-top: 20px;
+        color: #5C4033;
+        font-size: 0.9em;
+    }
+    
+    .info-text a {
+        color: #8B4513;
+        text-decoration: none;
+        font-weight: 600;
+    }
+    
+    .info-text a:hover {
+        text-decoration: underline;
+    }
+    
+    @media (max-width: 768px) {
+        .mfa-disable-container {
+            margin: 20px;
+            padding: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mfa-disable-container">
+    <h2>🔐 Disable MFA</h2>
+    
+    <div class="warning-box">
+        <p><strong>⚠️ Warning:</strong> Disabling Multi-Factor Authentication makes your account less secure. You will no longer have two-factor protection on login.</p>
+        <p>Please enter your password to confirm you want to disable MFA.</p>
+    </div>
+    
+    <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+        
+        <div class="form-group">
+            {{ form.password.label }}
+            {{ form.password(class="form-control", placeholder="Enter your password", autocomplete="current-password") }}
+            {% if form.password.errors %}
+                <div class="error-list">
+                    <ul>
+                    {% for error in form.password.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+        
+        <button type="submit" class="btn">Disable MFA</button>
+        <a href="{{ url_for('settings') }}" class="btn btn-cancel">Cancel</a>
+    </form>
+    
+    <div class="info-text">
+        <p><a href="{{ url_for('settings') }}">← Back to Account Settings</a></p>
+    </div>
+</div>
+{% endblock %}

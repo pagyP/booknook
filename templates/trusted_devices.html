@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Trusted Devices - Reading Nook{% endblock %}
+
+{% block extra_css %}
+<style>
+    .devices-container {
+        max-width: 600px;
+        margin: 40px auto;
+        padding: 30px;
+        background: #F5EBE0;
+        border-radius: 8px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        border: 1px solid #DCC9B8;
+    }
+    
+    .devices-container h2 {
+        color: #8B4513;
+        margin-bottom: 10px;
+        text-align: center;
+        font-family: 'Georgia', serif;
+    }
+    
+    .devices-container .subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 30px;
+        font-size: 0.95em;
+    }
+    
+    .info-box {
+        background: #EDE5D9;
+        border-left: 4px solid #6B3410;
+        padding: 15px;
+        margin-bottom: 25px;
+        border-radius: 3px;
+    }
+    
+    .info-box p {
+        margin: 0;
+        color: #5C4033;
+    }
+    
+    .device-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .device-item {
+        background: #EDE5D9;
+        border: 1px solid #DCC9B8;
+        border-radius: 4px;
+        padding: 15px;
+        margin-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .device-info {
+        flex: 1;
+    }
+    
+    .device-name {
+        color: #5C4033;
+        font-weight: 600;
+        font-size: 1.05em;
+        margin-bottom: 5px;
+    }
+    
+    .device-details {
+        color: #8B4513;
+        font-size: 0.9em;
+        line-height: 1.5;
+    }
+    
+    .device-timestamp {
+        color: #666;
+        font-size: 0.85em;
+        margin-top: 8px;
+    }
+    
+    .device-actions {
+        margin-left: 15px;
+        text-align: right;
+    }
+    
+    .btn-revoke {
+        background: #D32F2F;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9em;
+        font-weight: 600;
+        transition: background 0.3s;
+    }
+    
+    .btn-revoke:hover {
+        background: #B71C1C;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #8B4513;
+    }
+    
+    .empty-state p {
+        font-size: 1.05em;
+        margin: 15px 0;
+    }
+    
+    .back-link {
+        text-align: center;
+        margin-top: 25px;
+    }
+    
+    .back-link a {
+        color: #8B4513;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .back-link a:hover {
+        text-decoration: underline;
+    }
+    
+    @media (max-width: 768px) {
+        .devices-container {
+            margin: 20px;
+            padding: 20px;
+        }
+        
+        .device-item {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .device-actions {
+            margin-left: 0;
+            margin-top: 15px;
+            width: 100%;
+            text-align: left;
+        }
+        
+        .btn-revoke {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="devices-container">
+    <h2>📱 Trusted Devices</h2>
+    <p class="subtitle">Manage devices that don't require MFA verification</p>
+    
+    <div class="info-box">
+        <p><strong>What are trusted devices?</strong> Devices marked as "trusted" will skip MFA verification for 30 days. You can revoke any device anytime to require MFA again on next login.</p>
+    </div>
+    
+    {% if devices %}
+        <ul class="device-list">
+            {% for device in devices %}
+                <li class="device-item">
+                    <div class="device-info">
+                        <div class="device-name">
+                            {% if device.device_name %}
+                                {{ device.device_name }}
+                            {% else %}
+                                📱 Device ({{ device.user_agent[:40] }}...)
+                            {% endif %}
+                        </div>
+                        <div class="device-details">
+                            <div>📍 IP: {{ device.ip_address }}</div>
+                            <div>💬 {{ device.user_agent[:60] }}...</div>
+                        </div>
+                        <div class="device-timestamp">
+                            {% if device.last_used_at %}
+                                Last used: {{ device.last_used_at.strftime('%B %d, %Y at %I:%M %p') }}
+                            {% else %}
+                                Created: {{ device.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                            {% endif %}
+                            <br>
+                            Expires: {{ device.expires_at.strftime('%B %d, %Y at %I:%M %p') }}
+                        </div>
+                    </div>
+                    <div class="device-actions">
+                        <form method="POST" action="{{ url_for('revoke_trusted_device', device_id=device.id) }}" style="display: inline;">
+                            <button type="submit" class="btn-revoke" onclick="return confirm('Revoke this device? You\'ll need to verify MFA on next login from this device.');">Revoke</button>
+                        </form>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="empty-state">
+            <p>✨ No trusted devices</p>
+            <p>Devices will appear here after you log in and choose to trust them for 30 days.</p>
+        </div>
+    {% endif %}
+    
+    <div class="back-link">
+        <a href="{{ url_for('settings') }}">← Back to Settings</a>
+    </div>
+</div>
+{% endblock %}
