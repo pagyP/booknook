@@ -11,6 +11,10 @@
 
 A simple Flask web application to track and record the books you've read.
 
+Who is this app for?  
+ - Primarily aimed at self-hosting book lovers who want a private, secure way to log their reading history without relying on third-party services.
+Should you self host this app please know it does not track you in any way, shape or form.  No analytics, no ads, no tracking scripts. Just you and your books.
+
 ## Features
 
 - ✅ Add books you've read with title, author, and date
