@@ -217,22 +217,84 @@
         }
     }
     
-    .book-card h3 {
+    .book-header {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-height: 4.2em; /* keeps metadata starting point aligned across cards */
+    }
+
+    .book-title {
         color: #667eea;
-        margin-bottom: 8px;
+        margin-bottom: 0;
         font-size: 1.3em;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        min-height: 2.6em; /* reserve space so metadata aligns across cards */
     }
     
-    .book-card .author {
+    .book-author {
         color: #666;
         font-style: italic;
-        margin-bottom: 10px;
+        margin-bottom: 0;
+        min-height: 1.3em;
+        max-height: 1.3em;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .meta-isbn {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .meta-isbn-label {
+        font-size: 0.75em;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #888;
+        line-height: 1.2;
+    }
+
+    .meta-isbn-value {
+        font-size: 0.9em;
+        color: #555;
+        line-height: 1.3;
+        word-break: break-word;
+    }
+
+    .meta-highlight {
+        font-size: 0.9em;
+        color: #667eea;
+        font-weight: 500;
+        line-height: 1.3;
+        display: block;
+    }
+
+    .book-meta {
+        display: grid;
+        row-gap: 6px;
+    }
+
+    .meta-placeholder-isbn {
+        min-height: 2.4em; /* matches the height of the two-line ISBN block */
+    }
+
+    .meta-placeholder-line {
+        min-height: 1.3em; /* single-line placeholders for format/genre rows */
     }
     
     .book-card .date-read {
         font-size: 0.9em;
         color: #999;
-        margin-bottom: 10px;
+        line-height: 1.3;
     }
     
     .rating {
@@ -404,8 +466,10 @@
                         </div>
 
                         <div class="book-card-content">
-                            <h3>{{ book.title }}</h3>
-                            <div class="author">by {{ book.author }}</div>
+                            <div class="book-header">
+                                <h3 class="book-title">{{ book.title }}</h3>
+                                <div class="book-author">by {{ book.author }}</div>
+                            </div>
                             
                             <!-- Status Badge -->
                             <div>
@@ -418,22 +482,34 @@
                                 {% endif %}
                             </div>
                             
-                            {% if book.isbn %}
-                                <div style="font-size: 0.85em; color: #999; margin-bottom: 8px;">ISBN: {{ book.isbn }}</div>
-                            {% endif %}
-                            {% if book.genre %}
-                                <div style="font-size: 0.9em; color: #667eea; margin-bottom: 8px; font-weight: 500;">📚 {{ book.genre }}</div>
-                            {% endif %}
-                            <div style="font-size: 0.9em; color: #667eea; margin-bottom: 8px; font-weight: 500;">
-                                {% if book.format == 'ebook' %}
-                                    📱 E-book
-                                {% elif book.format == 'audiobook' %}
-                                    🎧 Audiobook
+                            <div class="book-meta">
+                                {% if book.isbn %}
+                                    <div class="meta-isbn">
+                                        <span class="meta-isbn-label">ISBN</span>
+                                        <span class="meta-isbn-value">{{ book.isbn }}</span>
+                                    </div>
                                 {% else %}
-                                    📖 Physical Book
+                                    <div class="meta-placeholder-isbn" aria-hidden="true"></div>
+                                {% endif %}
+
+                                <div class="meta-highlight">
+                                    {% if book.format == 'ebook' %}
+                                        📱 E-book
+                                    {% elif book.format == 'audiobook' %}
+                                        🎧 Audiobook
+                                    {% else %}
+                                        📖 Physical Book
+                                    {% endif %}
+                                </div>
+
+                                <div class="date-read">Added on {{ book.date_added.strftime('%B %d, %Y') }}</div>
+
+                                {% if book.genre %}
+                                    <div class="meta-highlight">📚 {{ book.genre }}</div>
+                                {% else %}
+                                    <div class="meta-placeholder-line" aria-hidden="true"></div>
                                 {% endif %}
                             </div>
-                            <div class="date-read">Added on {{ book.date_added.strftime('%B %d, %Y') }}</div>
                         
                             {% if book.rating %}
                                 <div class="rating">
