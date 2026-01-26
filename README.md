@@ -7,7 +7,7 @@
 [![CodeQL](https://github.com/pagyP/booknook/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/pagyP/booknook/actions/workflows/github-code-scanning/codeql)
 
 
-# Reading Nook 📚
+# booknook 📚
 
 A simple Flask web application to track and record the books you've read.
 
