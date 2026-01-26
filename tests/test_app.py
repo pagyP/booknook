@@ -172,7 +172,7 @@ class TestAuthentication:
         }, follow_redirects=True)
         # Should redirect to index
         assert response.status_code == 200
-        assert b'Reading Nook' in response.data
+        assert b'booknook' in response.data
     
     def test_login_invalid_password(self, client):
         """Test login fails with wrong password."""
@@ -209,7 +209,7 @@ class TestBookRoutes:
         client, _ = auth_user
         response = client.get('/')
         assert response.status_code == 200
-        assert b'Reading Nook' in response.data
+        assert b'booknook' in response.data
     
     def test_add_book_page_loads(self, auth_user):
         """Test that add book page loads."""
@@ -713,7 +713,7 @@ class TestRecoveryCodes:
         # Should successfully log in and redirect to index
         assert login_response.status_code == 200
         # Check for either success message or index page content
-        assert b'Welcome' in login_response.data or b'Reading Nook' in login_response.data
+        assert b'Welcome' in login_response.data or b'booknook' in login_response.data
     
     def test_invalid_recovery_code_rejected(self, client):
         """Verify invalid recovery codes are rejected"""

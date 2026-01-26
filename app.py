@@ -1174,7 +1174,7 @@ def setup_mfa():
     totp = pyotp.TOTP(secret)
     uri = totp.provisioning_uri(
         name=current_user.email,
-        issuer_name='Reading Nook'
+        issuer_name='booknook'
     )
     
     qr = qrcode.QRCode(version=1, box_size=10, border=4)
