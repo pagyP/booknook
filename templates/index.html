@@ -226,7 +226,7 @@
 
     .book-title {
         color: #667eea;
-        margin-bottom: 8px;
+        margin-bottom: 0;
         font-size: 1.3em;
         line-height: 1.3;
         display: -webkit-box;
@@ -239,7 +239,7 @@
     .book-author {
         color: #666;
         font-style: italic;
-        margin-bottom: 10px;
+        margin-bottom: 0;
         min-height: 1.3em;
         max-height: 1.3em;
         line-height: 1.3;
@@ -250,7 +250,6 @@
     }
 
     .meta-isbn {
-        margin-bottom: 6px;
         display: flex;
         flex-direction: column;
         gap: 2px;
@@ -274,7 +273,6 @@
     .meta-highlight {
         font-size: 0.9em;
         color: #667eea;
-        margin-bottom: 6px;
         font-weight: 500;
         line-height: 1.3;
         display: block;
@@ -285,14 +283,17 @@
         row-gap: 6px;
     }
 
-    .meta-placeholder {
-        min-height: 2.4em; /* matches the height of the multi-line ISBN block */
+    .meta-placeholder-isbn {
+        min-height: 2.4em; /* matches the height of the two-line ISBN block */
+    }
+
+    .meta-placeholder-line {
+        min-height: 1.3em; /* single-line placeholders for format/genre rows */
     }
     
     .book-card .date-read {
         font-size: 0.9em;
         color: #999;
-        margin-bottom: 6px;
         line-height: 1.3;
     }
     
@@ -488,7 +489,7 @@
                                         <span class="meta-isbn-value">{{ book.isbn }}</span>
                                     </div>
                                 {% else %}
-                                    <div class="meta-placeholder" aria-hidden="true"></div>
+                                    <div class="meta-placeholder-isbn" aria-hidden="true"></div>
                                 {% endif %}
 
                                 <div class="meta-highlight">
@@ -506,7 +507,7 @@
                                 {% if book.genre %}
                                     <div class="meta-highlight">📚 {{ book.genre }}</div>
                                 {% else %}
-                                    <div class="meta-placeholder" aria-hidden="true"></div>
+                                    <div class="meta-placeholder-line" aria-hidden="true"></div>
                                 {% endif %}
                             </div>
                         
