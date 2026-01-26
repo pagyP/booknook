@@ -26,17 +26,20 @@
         flex-wrap: wrap;
     }
     
-    /* Mobile: stack search form vertically */
-    @media (max-width: 479px) {
+    /* Mobile and Tablet: stack search form vertically */
+    @media (max-width: 767px) {
         .search-form {
             flex-direction: column;
         }
         
         .search-form input,
+        .search-form select,
         .search-form button,
         .search-form a {
             flex: initial;
-            min-width: 100%;
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
         }
     }
     
