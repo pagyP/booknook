@@ -130,15 +130,22 @@
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
     }
 
-    /* Desktop layout: cover on left, content on right */
+    /* Desktop layout: left column (cover + actions), right column (content) */
     @media (min-width: 768px) {
         .book-card {
             flex-direction: row;
             gap: 15px;
         }
 
-        .book-card-cover {
+        .book-card-left {
             flex-shrink: 0;
+            width: 120px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .book-card-cover {
             width: 120px;
             height: 180px;
             margin-bottom: 0;
@@ -168,6 +175,15 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+        }
+
+        .book-actions {
+            flex-direction: column;
+        }
+
+        .book-actions a {
+            flex: initial;
+            width: 100%;
         }
     }
 
@@ -233,7 +249,7 @@
     }
     
     .book-actions {
-        margin-top: 15px;
+        margin-top: 10px;
         display: flex;
         gap: 10px;
         flex-wrap: wrap;
@@ -367,15 +383,22 @@
             <div class="books-grid">
                 {% for book in books %}
                     <div class="book-card">
-                        {% if book.cover_url %}
-                            <div class="book-card-cover">
-                                <img src="{{ book.cover_url }}" alt="{{ book.title }}" onerror="(() => { const div = document.createElement('div'); div.className = 'book-card-cover-placeholder'; div.textContent = '📖'; this.parentElement.innerHTML = ''; this.parentElement.appendChild(div); }).call(this)">
+                        <div class="book-card-left">
+                            {% if book.cover_url %}
+                                <div class="book-card-cover">
+                                    <img src="{{ book.cover_url }}" alt="{{ book.title }}" onerror="(() => { const div = document.createElement('div'); div.className = 'book-card-cover-placeholder'; div.textContent = '📖'; this.parentElement.innerHTML = ''; this.parentElement.appendChild(div); }).call(this)">
+                                </div>
+                            {% else %}
+                                <div class="book-card-cover">
+                                    <div class="book-card-cover-placeholder">📖</div>
+                                </div>
+                            {% endif %}
+
+                            <div class="book-actions">
+                                <a href="{{ url_for('edit_book', id=book.id) }}" class="btn btn-secondary">Edit</a>
+                                <a href="{{ url_for('delete_book', id=book.id) }}" class="btn btn-danger" onclick="return confirm('Are you sure?')">Delete</a>
                             </div>
-                        {% else %}
-                            <div class="book-card-cover">
-                                <div class="book-card-cover-placeholder">📖</div>
-                            </div>
-                        {% endif %}
+                        </div>
 
                         <div class="book-card-content">
                             <h3>{{ book.title }}</h3>
@@ -419,10 +442,6 @@
                                 <div class="notes">{{ book.notes }}</div>
                             {% endif %}
                             
-                            <div class="book-actions">
-                                <a href="{{ url_for('edit_book', id=book.id) }}" class="btn btn-secondary">Edit</a>
-                                <a href="{{ url_for('delete_book', id=book.id) }}" class="btn btn-danger" onclick="return confirm('Are you sure?')">Delete</a>
-                            </div>
                         </div>
                     </div>
             {% endfor %}
