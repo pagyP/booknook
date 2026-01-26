@@ -2,7 +2,7 @@
 
 ## Overview
 
-Reading Nook supports account recovery using **recovery codes**. This is a password-less recovery method that doesn't require email access or external services. Each code is single-use and cryptographically secure.
+booknook supports account recovery using **recovery codes**. This is a password-less recovery method that doesn't require email access or external services. Each code is single-use and cryptographically secure.
 
 ## How It Works
 

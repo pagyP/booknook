@@ -1,6 +1,6 @@
 ## ✓ TBR (To Be Read) Feature - Implementation Complete!
 
-Your Reading Nook app now has full support for tracking books across three reading statuses!
+Your booknook app now has full support for tracking books across three reading statuses!
 
 ---
 
