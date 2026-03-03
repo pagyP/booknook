@@ -659,26 +659,22 @@ class TestCoverUpload:
         with app.app_context():
             assert db.session.get(Book, book_id) is None
 
-    def test_oversized_upload_returns_friendly_error(self, auth_user):
-        """An upload exceeding MAX_CONTENT_LENGTH triggers the 413 handler."""
+    def test_oversized_upload_on_add_redirects_to_add(self, auth_user):
+        """A 413 on /add redirects back to /add with a friendly flash message."""
         client, user = auth_user
         original_limit = app.config['MAX_CONTENT_LENGTH']
         try:
-            app.config['MAX_CONTENT_LENGTH'] = 1  # 1 byte — anything will exceed it
+            app.config['MAX_CONTENT_LENGTH'] = 1
             response = client.post('/add', data={
-                'title': 'Big Cover',
-                'author': 'Author',
-                'format': 'physical',
-                'status': 'read',
                 'cover_image': (self._make_image(), 'big.jpg'),
-            }, content_type='multipart/form-data', follow_redirects=True)
-            assert response.status_code == 200
-            assert b'too large' in response.data
+            }, content_type='multipart/form-data', follow_redirects=False)
+            assert response.status_code == 302
+            assert response.headers['Location'].endswith('/add')
         finally:
             app.config['MAX_CONTENT_LENGTH'] = original_limit
 
     def test_oversized_upload_external_referrer_redirects_to_index(self, auth_user):
-        """A cross-origin Referer header on a 413 is ignored to prevent open redirect."""
+        """A cross-origin Referer header on a 413 is ignored — redirect goes to index."""
         client, user = auth_user
         original_limit = app.config['MAX_CONTENT_LENGTH']
         try:
