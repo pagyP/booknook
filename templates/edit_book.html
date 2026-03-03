@@ -309,21 +309,6 @@
         </form>
     </div>
 
-    <script>
-        document.getElementById('cover_image').addEventListener('change', function () {
-            const file = this.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    document.getElementById('uploadPreviewImage').src = e.target.result;
-                    document.getElementById('uploadPreviewSection').style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-            } else {
-                document.getElementById('uploadPreviewSection').style.display = 'none';
-            }
-        });
-    </script>
-
+    {% include 'cover_upload_script.html' %}
     {% include 'isbn_lookup_script.html' %}
 {% endblock %}
