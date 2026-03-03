@@ -22,6 +22,7 @@ import os
 import re
 import logging
 import secrets
+import uuid
 import requests
 from dotenv import load_dotenv
 import base64
@@ -75,6 +76,12 @@ app.config['PERMANENT_SESSION_LIFETIME'] = 24 * 60 * 60  # 24 hours
 
 # Configure logging after all configuration is set
 configure_logging(app)
+
+# File upload configuration
+UPLOAD_FOLDER = os.path.join(app.static_folder, 'uploads', 'covers')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5 MB upload limit
+ALLOWED_IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'gif'}
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
@@ -704,6 +711,52 @@ def validate_cover_url(url):
         raise ValueError('Cover URL must follow Open Library CDN path structure.')
     
     return url
+
+
+def save_cover_upload(file):
+    """Save an uploaded cover image to the uploads folder.
+
+    Args:
+        file: Werkzeug FileStorage object from request.files
+
+    Returns:
+        URL path string (/static/uploads/covers/filename.ext)
+
+    Raises:
+        ValueError: If file type is not allowed or file is not a valid image.
+    """
+    from PIL import Image
+
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    if ext not in ALLOWED_IMAGE_EXTENSIONS:
+        raise ValueError(
+            f'Invalid file type. Allowed types: {", ".join(sorted(ALLOWED_IMAGE_EXTENSIONS))}.'
+        )
+
+    # Verify the file is actually an image, not a disguised executable
+    try:
+        img = Image.open(file.stream)
+        img.verify()
+    except Exception:
+        raise ValueError('File is not a valid image.')
+
+    file.stream.seek(0)
+    filename = f"{uuid.uuid4().hex}.{ext}"
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    file.save(filepath)
+    return f"/static/uploads/covers/{filename}"
+
+
+def delete_local_cover(cover_url):
+    """Delete a locally uploaded cover file if it exists."""
+    if cover_url and cover_url.startswith('/static/uploads/covers/'):
+        filename = os.path.basename(cover_url)
+        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        if os.path.exists(filepath):
+            try:
+                os.remove(filepath)
+            except OSError as e:
+                app.logger.warning(f'Could not delete cover file {filepath}: {e}')
 
 
 def normalize_genre_input(value):
@@ -1580,15 +1633,23 @@ def add_book():
                 except ValueError:
                     date_added = None
             
-            # Get and validate cover_url from form data if provided (from ISBN lookup)
-            cover_url_raw = request.form.get('cover_url', '').strip() or None
-            try:
-                cover_url = validate_cover_url(cover_url_raw)
-            except ValueError as e:
-                # Log the attempt and show generic error to user
-                app.logger.warning(f'Invalid cover URL rejected: {str(e)}')
-                flash('Invalid cover URL provided. Book saved without cover image.', 'warning')
-                cover_url = None
+            # Cover: uploaded file takes priority over ISBN lookup URL
+            cover_file = request.files.get('cover_image')
+            if cover_file and cover_file.filename:
+                try:
+                    cover_url = save_cover_upload(cover_file)
+                except ValueError as e:
+                    flash(f'{str(e)} Book saved without cover image.', 'warning')
+                    cover_url = None
+            else:
+                cover_url_raw = request.form.get('cover_url', '').strip() or None
+                try:
+                    cover_url = validate_cover_url(cover_url_raw)
+                except ValueError as e:
+                    # Log the attempt and show generic error to user
+                    app.logger.warning(f'Invalid cover URL rejected: {str(e)}')
+                    flash('Invalid cover URL provided. Book saved without cover image.', 'warning')
+                    cover_url = None
             
             book = Book(
                 title=form.title.data,
@@ -1635,19 +1696,31 @@ def edit_book(id):
                 except ValueError:
                     date_added = book.date_added  # Keep original if parsing fails
             
-            # Get and validate cover_url from form data if provided (from ISBN lookup)
-            cover_url_raw = request.form.get('cover_url', '').strip() or None
-            if cover_url_raw:
+            # Cover: uploaded file takes priority, then ISBN lookup URL, then keep existing
+            cover_file = request.files.get('cover_image')
+            if cover_file and cover_file.filename:
                 try:
-                    cover_url = validate_cover_url(cover_url_raw)
+                    new_cover_url = save_cover_upload(cover_file)
+                    delete_local_cover(book.cover_url)  # clean up old upload if any
+                    cover_url = new_cover_url
                 except ValueError as e:
-                    # Log the attempt and show generic error to user
-                    app.logger.warning(f'Invalid cover URL rejected during edit: {str(e)}')
-                    flash('Invalid cover URL provided. Using existing cover image.', 'warning')
+                    flash(f'{str(e)} Using existing cover image.', 'warning')
                     cover_url = book.cover_url
             else:
-                # No cover_url in form data, keep existing cover_url
-                cover_url = book.cover_url
+                cover_url_raw = request.form.get('cover_url', '').strip() or None
+                if cover_url_raw:
+                    try:
+                        cover_url = validate_cover_url(cover_url_raw)
+                        if cover_url != book.cover_url:
+                            delete_local_cover(book.cover_url)
+                    except ValueError as e:
+                        # Log the attempt and show generic error to user
+                        app.logger.warning(f'Invalid cover URL rejected during edit: {str(e)}')
+                        flash('Invalid cover URL provided. Using existing cover image.', 'warning')
+                        cover_url = book.cover_url
+                else:
+                    # No cover_url in form data, keep existing cover_url
+                    cover_url = book.cover_url
             
             book.title = form.title.data
             book.author = form.author.data
@@ -1693,6 +1766,7 @@ def delete_book(id):
         flash('You do not have permission to delete this book.', 'error')
         return redirect(url_for('index'))
     try:
+        delete_local_cover(book.cover_url)
         db.session.delete(book)
         db.session.commit()
         flash(f'Book "{book.title}" deleted successfully!', 'success')
