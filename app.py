@@ -1796,6 +1796,12 @@ def delete_book(id):
     
     return redirect(url_for('index'))
 
+
+@app.errorhandler(413)
+def request_entity_too_large(e):
+    flash('The file you uploaded is too large. Maximum size is 5 MB.', 'error')
+    return redirect(request.referrer or url_for('index'))
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
