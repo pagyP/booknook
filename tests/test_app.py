@@ -476,6 +476,69 @@ class TestCoverUpload:
                     filename = os.path.basename(book.cover_url)
                     assert os.path.exists(os.path.join(tmpdir, filename))
 
+    def test_add_book_invalid_image_content_saves_without_cover(self, auth_user):
+        """Uploading a non-image file is rejected; book is still saved without a cover."""
+        client, user = auth_user
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('app.UPLOAD_FOLDER', tmpdir):
+                response = client.post('/add', data={
+                    'title': 'Bad Cover Book',
+                    'author': 'Author',
+                    'format': 'physical',
+                    'status': 'read',
+                    'cover_image': (io.BytesIO(b'not an image'), 'evil.jpg'),
+                }, content_type='multipart/form-data', follow_redirects=True)
+                assert response.status_code == 200
+
+                with app.app_context():
+                    book = Book.query.filter_by(title='Bad Cover Book').first()
+                    assert book is not None
+                    assert book.cover_url is None
+
+    def test_add_book_unsupported_image_format_saves_without_cover(self, auth_user):
+        """Uploading an unsupported image format (e.g. BMP) is rejected; book saved without cover."""
+        client, user = auth_user
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('app.UPLOAD_FOLDER', tmpdir):
+                bmp_buf = io.BytesIO()
+                PILImage.new('RGB', (10, 10)).save(bmp_buf, format='BMP')
+                bmp_buf.seek(0)
+                response = client.post('/add', data={
+                    'title': 'BMP Cover Book',
+                    'author': 'Author',
+                    'format': 'physical',
+                    'status': 'read',
+                    'cover_image': (bmp_buf, 'cover.bmp'),
+                }, content_type='multipart/form-data', follow_redirects=True)
+                assert response.status_code == 200
+
+                with app.app_context():
+                    book = Book.query.filter_by(title='BMP Cover Book').first()
+                    assert book is not None
+                    assert book.cover_url is None
+
+    def test_add_book_upload_takes_precedence_over_cover_url(self, auth_user):
+        """When both a file upload and a cover_url are submitted, the upload wins."""
+        client, user = auth_user
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('app.UPLOAD_FOLDER', tmpdir):
+                isbn_cover = 'https://covers.openlibrary.org/b/id/99999-M.jpg'
+                response = client.post('/add', data={
+                    'title': 'Precedence Book',
+                    'author': 'Author',
+                    'format': 'physical',
+                    'status': 'read',
+                    'cover_url': isbn_cover,
+                    'cover_image': (self._make_image(), 'manual.jpg'),
+                }, content_type='multipart/form-data', follow_redirects=True)
+                assert response.status_code == 200
+
+                with app.app_context():
+                    book = Book.query.filter_by(title='Precedence Book').first()
+                    assert book is not None
+                    assert book.cover_url.startswith('/covers/')
+                    assert book.cover_url != isbn_cover
+
     def test_edit_book_upload_replaces_local_cover(self, auth_user):
         """Uploading a new cover replaces an existing local upload and deletes the old file."""
         client, user = auth_user
@@ -595,6 +658,24 @@ class TestCoverUpload:
         assert response.status_code == 200
         with app.app_context():
             assert db.session.get(Book, book_id) is None
+
+    def test_oversized_upload_returns_friendly_error(self, auth_user):
+        """An upload exceeding MAX_CONTENT_LENGTH triggers the 413 handler."""
+        client, user = auth_user
+        original_limit = app.config['MAX_CONTENT_LENGTH']
+        try:
+            app.config['MAX_CONTENT_LENGTH'] = 1  # 1 byte — anything will exceed it
+            response = client.post('/add', data={
+                'title': 'Big Cover',
+                'author': 'Author',
+                'format': 'physical',
+                'status': 'read',
+                'cover_image': (self._make_image(), 'big.jpg'),
+            }, content_type='multipart/form-data', follow_redirects=True)
+            assert response.status_code == 200
+            assert b'too large' in response.data
+        finally:
+            app.config['MAX_CONTENT_LENGTH'] = original_limit
 
 
 class TestSearch:
