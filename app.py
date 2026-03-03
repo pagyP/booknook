@@ -727,13 +727,17 @@ def save_cover_upload(file):
     """
     from PIL import Image
 
+    # Reject obviously wrong extensions early (user-facing error), but do NOT
+    # use the user-supplied extension in the saved filename — we derive that
+    # from Pillow's detected format instead, keeping user input out of the path.
     ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
     if ext not in ALLOWED_IMAGE_EXTENSIONS:
         raise ValueError(
             f'Invalid file type. Allowed types: {", ".join(sorted(ALLOWED_IMAGE_EXTENSIONS))}.'
         )
 
-    # Verify the file is actually an image, not a disguised executable
+    # Verify the file is actually an image, not a disguised executable.
+    # verify() exhausts the stream, so seek back before re-opening.
     try:
         img = Image.open(file.stream)
         img.verify()
@@ -741,7 +745,15 @@ def save_cover_upload(file):
         raise ValueError('File is not a valid image.')
 
     file.stream.seek(0)
-    filename = f"{uuid.uuid4().hex}.{ext}"
+
+    # Derive extension from Pillow's detected format — never from user input —
+    # to prevent tainted data from reaching the filesystem path.
+    _PILLOW_FORMAT_TO_EXT = {'JPEG': 'jpg', 'PNG': 'png', 'WEBP': 'webp', 'GIF': 'gif'}
+    detected = Image.open(file.stream).format
+    safe_ext = _PILLOW_FORMAT_TO_EXT.get(detected, 'jpg')
+    file.stream.seek(0)
+
+    filename = f"{uuid.uuid4().hex}.{safe_ext}"
     filepath = os.path.join(UPLOAD_FOLDER, filename)
     file.save(filepath)
     return f"/static/uploads/covers/{filename}"
@@ -750,8 +762,13 @@ def save_cover_upload(file):
 def delete_local_cover(cover_url):
     """Delete a locally uploaded cover file if it exists."""
     if cover_url and cover_url.startswith('/static/uploads/covers/'):
-        filename = os.path.basename(cover_url)
-        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        # Resolve to an absolute path and confirm it stays within UPLOAD_FOLDER
+        # before touching the filesystem.
+        safe_root = os.path.realpath(UPLOAD_FOLDER)
+        filepath = os.path.realpath(os.path.join(UPLOAD_FOLDER, os.path.basename(cover_url)))
+        if not filepath.startswith(safe_root + os.sep):
+            app.logger.warning(f'Blocked suspicious cover path: {cover_url}')
+            return
         if os.path.exists(filepath):
             try:
                 os.remove(filepath)
