@@ -22,6 +22,7 @@ import os
 import re
 import logging
 import secrets
+import uuid
 import requests
 from dotenv import load_dotenv
 import base64
@@ -75,6 +76,17 @@ app.config['PERMANENT_SESSION_LIFETIME'] = 24 * 60 * 60  # 24 hours
 
 # Configure logging after all configuration is set
 configure_logging(app)
+
+# File upload configuration — COVER_UPLOAD_DIR can be set to an external
+# persistent path in production (e.g. a mounted volume). Defaults to
+# static/uploads/covers so dev works without any extra config.
+UPLOAD_FOLDER = os.getenv(
+    'COVER_UPLOAD_DIR',
+    os.path.join(app.static_folder, 'uploads', 'covers')
+)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5 MB upload limit
+ALLOWED_IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'gif'}
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
@@ -704,6 +716,62 @@ def validate_cover_url(url):
         raise ValueError('Cover URL must follow Open Library CDN path structure.')
     
     return url
+
+
+def save_cover_upload(file):
+    """Save an uploaded cover image to the uploads folder.
+
+    Args:
+        file: Werkzeug FileStorage object from request.files
+
+    Returns:
+        URL path string (/covers/filename.ext)
+
+    Raises:
+        ValueError: If the file is not a supported image format.
+    """
+    from PIL import Image
+
+    _PILLOW_FORMAT_TO_EXT = {'JPEG': 'jpg', 'PNG': 'png', 'WEBP': 'webp', 'GIF': 'gif'}
+
+    # Open once with a context manager, read the Pillow-detected format, then
+    # verify integrity. img.format is set from the file header during open()
+    # and remains accessible before verify() invalidates the object.
+    try:
+        with Image.open(file.stream) as img:
+            detected_format = img.format
+            img.verify()
+    except Exception:
+        raise ValueError('File is not a valid image.')
+
+    safe_ext = _PILLOW_FORMAT_TO_EXT.get(detected_format)
+    if safe_ext is None:
+        raise ValueError(
+            f'Unsupported image format. Allowed types: {", ".join(sorted(ALLOWED_IMAGE_EXTENSIONS))}.'
+        )
+
+    file.stream.seek(0)
+    filename = f"{uuid.uuid4().hex}.{safe_ext}"
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    file.save(filepath)
+    return f"/covers/{filename}"
+
+
+def delete_local_cover(cover_url):
+    """Delete a locally uploaded cover file if it exists."""
+    if cover_url and cover_url.startswith('/covers/'):
+        # Resolve to an absolute path and confirm it stays within UPLOAD_FOLDER
+        # before touching the filesystem.
+        safe_root = os.path.realpath(UPLOAD_FOLDER)
+        filepath = os.path.realpath(os.path.join(UPLOAD_FOLDER, os.path.basename(cover_url)))
+        if not filepath.startswith(safe_root + os.sep):
+            app.logger.warning(f'Blocked suspicious cover path: {cover_url}')
+            return
+        if os.path.exists(filepath):
+            try:
+                os.remove(filepath)
+            except OSError as e:
+                app.logger.warning(f'Could not delete cover file {filepath}: {e}')
 
 
 def normalize_genre_input(value):
@@ -1492,6 +1560,12 @@ def reset_password():
     # Pass token as hidden form field instead of URL parameters
     return render_template('reset_password.html', form=form, user=user, token=token)
 
+@app.route('/covers/<filename>')
+def uploaded_cover(filename):
+    """Serve uploaded cover images from UPLOAD_FOLDER."""
+    from flask import send_from_directory
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
 @app.route('/')
 @login_required
 def index():
@@ -1580,15 +1654,23 @@ def add_book():
                 except ValueError:
                     date_added = None
             
-            # Get and validate cover_url from form data if provided (from ISBN lookup)
-            cover_url_raw = request.form.get('cover_url', '').strip() or None
-            try:
-                cover_url = validate_cover_url(cover_url_raw)
-            except ValueError as e:
-                # Log the attempt and show generic error to user
-                app.logger.warning(f'Invalid cover URL rejected: {str(e)}')
-                flash('Invalid cover URL provided. Book saved without cover image.', 'warning')
-                cover_url = None
+            # Cover: uploaded file takes priority over ISBN lookup URL
+            cover_file = request.files.get('cover_image')
+            if cover_file and cover_file.filename:
+                try:
+                    cover_url = save_cover_upload(cover_file)
+                except ValueError as e:
+                    flash(f'{str(e)} Book saved without cover image.', 'warning')
+                    cover_url = None
+            else:
+                cover_url_raw = request.form.get('cover_url', '').strip() or None
+                try:
+                    cover_url = validate_cover_url(cover_url_raw)
+                except ValueError as e:
+                    # Log the attempt and show generic error to user
+                    app.logger.warning(f'Invalid cover URL rejected: {str(e)}')
+                    flash('Invalid cover URL provided. Book saved without cover image.', 'warning')
+                    cover_url = None
             
             book = Book(
                 title=form.title.data,
@@ -1635,19 +1717,31 @@ def edit_book(id):
                 except ValueError:
                     date_added = book.date_added  # Keep original if parsing fails
             
-            # Get and validate cover_url from form data if provided (from ISBN lookup)
-            cover_url_raw = request.form.get('cover_url', '').strip() or None
-            if cover_url_raw:
+            # Cover: uploaded file takes priority, then ISBN lookup URL, then keep existing
+            cover_file = request.files.get('cover_image')
+            if cover_file and cover_file.filename:
                 try:
-                    cover_url = validate_cover_url(cover_url_raw)
+                    new_cover_url = save_cover_upload(cover_file)
+                    delete_local_cover(book.cover_url)  # clean up old upload if any
+                    cover_url = new_cover_url
                 except ValueError as e:
-                    # Log the attempt and show generic error to user
-                    app.logger.warning(f'Invalid cover URL rejected during edit: {str(e)}')
-                    flash('Invalid cover URL provided. Using existing cover image.', 'warning')
+                    flash(f'{str(e)} Using existing cover image.', 'warning')
                     cover_url = book.cover_url
             else:
-                # No cover_url in form data, keep existing cover_url
-                cover_url = book.cover_url
+                cover_url_raw = request.form.get('cover_url', '').strip() or None
+                if cover_url_raw:
+                    try:
+                        cover_url = validate_cover_url(cover_url_raw)
+                        if cover_url != book.cover_url:
+                            delete_local_cover(book.cover_url)
+                    except ValueError as e:
+                        # Log the attempt and show generic error to user
+                        app.logger.warning(f'Invalid cover URL rejected during edit: {str(e)}')
+                        flash('Invalid cover URL provided. Using existing cover image.', 'warning')
+                        cover_url = book.cover_url
+                else:
+                    # No cover_url in form data, keep existing cover_url
+                    cover_url = book.cover_url
             
             book.title = form.title.data
             book.author = form.author.data
@@ -1693,12 +1787,30 @@ def delete_book(id):
         flash('You do not have permission to delete this book.', 'error')
         return redirect(url_for('index'))
     try:
+        delete_local_cover(book.cover_url)
         db.session.delete(book)
         db.session.commit()
         flash(f'Book "{book.title}" deleted successfully!', 'success')
     except Exception as e:
         flash(f'Error deleting book: {str(e)}', 'error')
     
+    return redirect(url_for('index'))
+
+
+@app.errorhandler(413)
+def request_entity_too_large(e):
+    flash('The file you uploaded is too large. Maximum size is 5 MB.', 'error')
+    # Build the redirect target from url_for() only — never pass user-supplied
+    # header values (e.g. Referer) into redirect(), as that is an open redirect.
+    # request.path is the server-parsed path of the request that was too large.
+    if request.path == '/add':
+        return redirect(url_for('add_book'))
+    if request.path.startswith('/edit/'):
+        try:
+            book_id = int(request.path.split('/')[-1])
+            return redirect(url_for('edit_book', id=book_id))
+        except (ValueError, IndexError):
+            pass
     return redirect(url_for('index'))
 
 if __name__ == '__main__':

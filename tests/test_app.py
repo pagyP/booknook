@@ -1,4 +1,9 @@
+import io
+import os
+import tempfile
 import pytest
+from unittest.mock import patch
+from PIL import Image as PILImage
 from app import app, db, User, Book, RecoveryCode, configure_logging, generate_recovery_codes, password_hasher
 from datetime import datetime
 
@@ -437,6 +442,252 @@ class TestBookRoutes:
         # Try to edit user1's book
         response = client.get(f'/edit/{book_id}')
         assert response.status_code == 302  # Redirected (permission denied)
+
+
+class TestCoverUpload:
+    """Test cover image upload and replacement logic on add/edit/delete routes."""
+
+    def _make_image(self, fmt='JPEG'):
+        """Return a BytesIO containing a minimal valid image."""
+        buf = io.BytesIO()
+        PILImage.new('RGB', (10, 10), color='red').save(buf, format=fmt)
+        buf.seek(0)
+        return buf
+
+    def test_add_book_with_cover_upload(self, auth_user):
+        """Uploading a cover image when adding a book sets cover_url."""
+        client, user = auth_user
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('app.UPLOAD_FOLDER', tmpdir):
+                response = client.post('/add', data={
+                    'title': 'Book With Upload',
+                    'author': 'Author',
+                    'format': 'physical',
+                    'status': 'read',
+                    'cover_image': (self._make_image(), 'cover.jpg'),
+                }, content_type='multipart/form-data', follow_redirects=True)
+                assert response.status_code == 200
+
+                with app.app_context():
+                    book = Book.query.filter_by(title='Book With Upload').first()
+                    assert book is not None
+                    assert book.cover_url is not None
+                    assert book.cover_url.startswith('/covers/')
+                    filename = os.path.basename(book.cover_url)
+                    assert os.path.exists(os.path.join(tmpdir, filename))
+
+    def test_add_book_invalid_image_content_saves_without_cover(self, auth_user):
+        """Uploading a non-image file is rejected; book is still saved without a cover."""
+        client, user = auth_user
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('app.UPLOAD_FOLDER', tmpdir):
+                response = client.post('/add', data={
+                    'title': 'Bad Cover Book',
+                    'author': 'Author',
+                    'format': 'physical',
+                    'status': 'read',
+                    'cover_image': (io.BytesIO(b'not an image'), 'evil.jpg'),
+                }, content_type='multipart/form-data', follow_redirects=True)
+                assert response.status_code == 200
+
+                with app.app_context():
+                    book = Book.query.filter_by(title='Bad Cover Book').first()
+                    assert book is not None
+                    assert book.cover_url is None
+
+    def test_add_book_unsupported_image_format_saves_without_cover(self, auth_user):
+        """Uploading an unsupported image format (e.g. BMP) is rejected; book saved without cover."""
+        client, user = auth_user
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('app.UPLOAD_FOLDER', tmpdir):
+                bmp_buf = io.BytesIO()
+                PILImage.new('RGB', (10, 10)).save(bmp_buf, format='BMP')
+                bmp_buf.seek(0)
+                response = client.post('/add', data={
+                    'title': 'BMP Cover Book',
+                    'author': 'Author',
+                    'format': 'physical',
+                    'status': 'read',
+                    'cover_image': (bmp_buf, 'cover.bmp'),
+                }, content_type='multipart/form-data', follow_redirects=True)
+                assert response.status_code == 200
+
+                with app.app_context():
+                    book = Book.query.filter_by(title='BMP Cover Book').first()
+                    assert book is not None
+                    assert book.cover_url is None
+
+    def test_add_book_upload_takes_precedence_over_cover_url(self, auth_user):
+        """When both a file upload and a cover_url are submitted, the upload wins."""
+        client, user = auth_user
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('app.UPLOAD_FOLDER', tmpdir):
+                isbn_cover = 'https://covers.openlibrary.org/b/id/99999-M.jpg'
+                response = client.post('/add', data={
+                    'title': 'Precedence Book',
+                    'author': 'Author',
+                    'format': 'physical',
+                    'status': 'read',
+                    'cover_url': isbn_cover,
+                    'cover_image': (self._make_image(), 'manual.jpg'),
+                }, content_type='multipart/form-data', follow_redirects=True)
+                assert response.status_code == 200
+
+                with app.app_context():
+                    book = Book.query.filter_by(title='Precedence Book').first()
+                    assert book is not None
+                    assert book.cover_url.startswith('/covers/')
+                    assert book.cover_url != isbn_cover
+
+    def test_edit_book_upload_replaces_local_cover(self, auth_user):
+        """Uploading a new cover replaces an existing local upload and deletes the old file."""
+        client, user = auth_user
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('app.UPLOAD_FOLDER', tmpdir):
+                old_filename = 'oldcover.jpg'
+                old_filepath = os.path.join(tmpdir, old_filename)
+                open(old_filepath, 'wb').close()
+
+                with app.app_context():
+                    book = Book(title='Book', author='Author', user_id=user.id,
+                                cover_url=f'/covers/{old_filename}')
+                    db.session.add(book)
+                    db.session.commit()
+                    book_id = book.id
+
+                response = client.post(f'/edit/{book_id}', data={
+                    'title': 'Book', 'author': 'Author',
+                    'format': 'physical', 'status': 'read',
+                    'cover_image': (self._make_image(), 'new.jpg'),
+                }, content_type='multipart/form-data', follow_redirects=True)
+                assert response.status_code == 200
+
+                assert not os.path.exists(old_filepath)
+                with app.app_context():
+                    book = db.get_or_404(Book, book_id)
+                    assert book.cover_url.startswith('/covers/')
+                    assert book.cover_url != f'/covers/{old_filename}'
+                    new_filename = os.path.basename(book.cover_url)
+                    assert os.path.exists(os.path.join(tmpdir, new_filename))
+
+    def test_edit_book_invalid_upload_preserves_cover(self, auth_user):
+        """A corrupt upload is rejected and the existing cover is preserved."""
+        client, user = auth_user
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('app.UPLOAD_FOLDER', tmpdir):
+                original_cover = 'https://covers.openlibrary.org/b/id/12345-M.jpg'
+                with app.app_context():
+                    book = Book(title='Book', author='Author', user_id=user.id,
+                                cover_url=original_cover)
+                    db.session.add(book)
+                    db.session.commit()
+                    book_id = book.id
+
+                response = client.post(f'/edit/{book_id}', data={
+                    'title': 'Book', 'author': 'Author',
+                    'format': 'physical', 'status': 'read',
+                    'cover_image': (io.BytesIO(b'not an image'), 'bad.jpg'),
+                }, content_type='multipart/form-data', follow_redirects=True)
+                assert response.status_code == 200
+
+                with app.app_context():
+                    book = db.get_or_404(Book, book_id)
+                    assert book.cover_url == original_cover
+
+    def test_edit_book_no_upload_preserves_local_cover(self, auth_user):
+        """Submitting without a file keeps the existing local cover untouched."""
+        client, user = auth_user
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('app.UPLOAD_FOLDER', tmpdir):
+                cover_filename = 'existing.jpg'
+                cover_filepath = os.path.join(tmpdir, cover_filename)
+                open(cover_filepath, 'wb').close()
+
+                with app.app_context():
+                    book = Book(title='Book', author='Author', user_id=user.id,
+                                cover_url=f'/covers/{cover_filename}')
+                    db.session.add(book)
+                    db.session.commit()
+                    book_id = book.id
+
+                response = client.post(f'/edit/{book_id}', data={
+                    'title': 'Updated Title', 'author': 'Author',
+                    'format': 'physical', 'status': 'read',
+                }, follow_redirects=True)
+                assert response.status_code == 200
+
+                assert os.path.exists(cover_filepath)
+                with app.app_context():
+                    book = db.get_or_404(Book, book_id)
+                    assert book.cover_url == f'/covers/{cover_filename}'
+
+    def test_delete_book_removes_local_cover_file(self, auth_user):
+        """Deleting a book removes its locally uploaded cover file from disk."""
+        client, user = auth_user
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('app.UPLOAD_FOLDER', tmpdir):
+                cover_filename = 'todelete.jpg'
+                cover_filepath = os.path.join(tmpdir, cover_filename)
+                open(cover_filepath, 'wb').close()
+
+                with app.app_context():
+                    book = Book(title='Book', author='Author', user_id=user.id,
+                                cover_url=f'/covers/{cover_filename}')
+                    db.session.add(book)
+                    db.session.commit()
+                    book_id = book.id
+
+                response = client.get(f'/delete/{book_id}', follow_redirects=True)
+                assert response.status_code == 200
+
+                assert not os.path.exists(cover_filepath)
+                with app.app_context():
+                    assert db.session.get(Book, book_id) is None
+
+    def test_delete_book_with_cdn_cover_does_not_error(self, auth_user):
+        """Deleting a book with an Open Library CDN cover (no local file) succeeds cleanly."""
+        client, user = auth_user
+        with app.app_context():
+            book = Book(title='CDN Cover Book', author='Author', user_id=user.id,
+                        cover_url='https://covers.openlibrary.org/b/id/99999-M.jpg')
+            db.session.add(book)
+            db.session.commit()
+            book_id = book.id
+
+        response = client.get(f'/delete/{book_id}', follow_redirects=True)
+        assert response.status_code == 200
+        with app.app_context():
+            assert db.session.get(Book, book_id) is None
+
+    def test_oversized_upload_on_add_redirects_to_add(self, auth_user):
+        """A 413 on /add redirects back to /add with a friendly flash message."""
+        client, user = auth_user
+        original_limit = app.config['MAX_CONTENT_LENGTH']
+        try:
+            app.config['MAX_CONTENT_LENGTH'] = 1
+            response = client.post('/add', data={
+                'cover_image': (self._make_image(), 'big.jpg'),
+            }, content_type='multipart/form-data', follow_redirects=False)
+            assert response.status_code == 302
+            assert response.headers['Location'].endswith('/add')
+        finally:
+            app.config['MAX_CONTENT_LENGTH'] = original_limit
+
+    def test_oversized_upload_external_referrer_redirects_to_index(self, auth_user):
+        """A cross-origin Referer header on a 413 is ignored — redirect goes to index."""
+        client, user = auth_user
+        original_limit = app.config['MAX_CONTENT_LENGTH']
+        try:
+            app.config['MAX_CONTENT_LENGTH'] = 1
+            response = client.post('/add', data={
+                'cover_image': (self._make_image(), 'big.jpg'),
+            }, content_type='multipart/form-data',
+               headers={'Referer': 'https://evil.example.com/phish'},
+               follow_redirects=False)
+            assert response.status_code == 302
+            assert 'evil.example.com' not in response.headers['Location']
+        finally:
+            app.config['MAX_CONTENT_LENGTH'] = original_limit
 
 
 class TestSearch:

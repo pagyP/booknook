@@ -150,7 +150,7 @@
     <div class="form-container">
         <h2 style="color: #667eea; margin-bottom: 20px;">📖 Add a New Book</h2>
         
-        <form method="POST" novalidate id="bookForm">
+        <form method="POST" enctype="multipart/form-data" novalidate id="bookForm">
             {{ form.hidden_tag() }}
             
             <div class="form-group">
@@ -198,13 +198,24 @@
                 {% endif %}
             </div>
 
-            <!-- Book cover preview section -->
+            <!-- Book cover preview section (populated by ISBN lookup) -->
             <div id="coverPreviewSection" class="form-group" style="display: none;">
-                <label>Book Cover</label>
+                <label>Cover (from ISBN lookup)</label>
                 <div style="text-align: center;">
                     <img id="coverPreviewImage" src="" alt="Book cover" style="max-width: 120px; max-height: 200px; border-radius: 5px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                     <input type="hidden" id="coverUrlInput" name="cover_url" value="">
                 </div>
+            </div>
+
+            <!-- Manual cover upload (overrides ISBN cover if both provided) -->
+            <div class="form-group">
+                <label for="cover_image">Upload Cover Image</label>
+                <div id="uploadPreviewSection" style="display:none; text-align:center; margin-bottom:8px;">
+                    <img id="uploadPreviewImage" src="" alt="Cover preview" style="max-width:120px; max-height:200px; border-radius:5px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+                </div>
+                <input type="file" id="cover_image" name="cover_image" accept="image/jpeg,image/png,image/webp,image/gif"
+                       style="width:100%; padding:8px; border:1px dashed #ccc; border-radius:5px; cursor:pointer; box-sizing:border-box;">
+                <p style="font-size:0.85em; color:#666; margin-top:4px;">JPG, PNG, WebP or GIF · max 5 MB. Overrides ISBN cover if both are provided.</p>
             </div>
             
             <div class="form-group">
@@ -284,5 +295,6 @@
         </form>
     </div>
 
+    {% include 'cover_upload_script.html' %}
     {% include 'isbn_lookup_script.html' %}
 {% endblock %}

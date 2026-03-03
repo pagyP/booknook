@@ -26,3 +26,7 @@ wheels/
 *.db
 .env
 .venv/
+
+# Uploaded cover images (user content, not source)
+static/uploads/covers/*
+!static/uploads/covers/.gitkeep
