@@ -1800,7 +1800,15 @@ def delete_book(id):
 @app.errorhandler(413)
 def request_entity_too_large(e):
     flash('The file you uploaded is too large. Maximum size is 5 MB.', 'error')
-    return redirect(request.referrer or url_for('index'))
+    # Validate the Referer header is same-host before redirecting to it —
+    # the header is attacker-controlled and blindly following it is an open redirect.
+    from urllib.parse import urlparse
+    referrer = request.referrer
+    if referrer:
+        parsed = urlparse(referrer)
+        if parsed.netloc == '' or parsed.netloc == request.host:
+            return redirect(referrer)
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     with app.app_context():

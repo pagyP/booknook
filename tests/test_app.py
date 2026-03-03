@@ -677,6 +677,22 @@ class TestCoverUpload:
         finally:
             app.config['MAX_CONTENT_LENGTH'] = original_limit
 
+    def test_oversized_upload_external_referrer_redirects_to_index(self, auth_user):
+        """A cross-origin Referer header on a 413 is ignored to prevent open redirect."""
+        client, user = auth_user
+        original_limit = app.config['MAX_CONTENT_LENGTH']
+        try:
+            app.config['MAX_CONTENT_LENGTH'] = 1
+            response = client.post('/add', data={
+                'cover_image': (self._make_image(), 'big.jpg'),
+            }, content_type='multipart/form-data',
+               headers={'Referer': 'https://evil.example.com/phish'},
+               follow_redirects=False)
+            assert response.status_code == 302
+            assert 'evil.example.com' not in response.headers['Location']
+        finally:
+            app.config['MAX_CONTENT_LENGTH'] = original_limit
+
 
 class TestSearch:
     """Test search functionality."""
