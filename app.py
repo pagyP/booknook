@@ -725,39 +725,32 @@ def save_cover_upload(file):
         file: Werkzeug FileStorage object from request.files
 
     Returns:
-        URL path string (/static/uploads/covers/filename.ext)
+        URL path string (/covers/filename.ext)
 
     Raises:
-        ValueError: If file type is not allowed or file is not a valid image.
+        ValueError: If the file is not a supported image format.
     """
     from PIL import Image
 
-    # Reject obviously wrong extensions early (user-facing error), but do NOT
-    # use the user-supplied extension in the saved filename — we derive that
-    # from Pillow's detected format instead, keeping user input out of the path.
-    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
-    if ext not in ALLOWED_IMAGE_EXTENSIONS:
-        raise ValueError(
-            f'Invalid file type. Allowed types: {", ".join(sorted(ALLOWED_IMAGE_EXTENSIONS))}.'
-        )
+    _PILLOW_FORMAT_TO_EXT = {'JPEG': 'jpg', 'PNG': 'png', 'WEBP': 'webp', 'GIF': 'gif'}
 
-    # Verify the file is actually an image, not a disguised executable.
-    # verify() exhausts the stream, so seek back before re-opening.
+    # Open once with a context manager, read the Pillow-detected format, then
+    # verify integrity. img.format is set from the file header during open()
+    # and remains accessible before verify() invalidates the object.
     try:
-        img = Image.open(file.stream)
-        img.verify()
+        with Image.open(file.stream) as img:
+            detected_format = img.format
+            img.verify()
     except Exception:
         raise ValueError('File is not a valid image.')
 
-    file.stream.seek(0)
+    safe_ext = _PILLOW_FORMAT_TO_EXT.get(detected_format)
+    if safe_ext is None:
+        raise ValueError(
+            f'Unsupported image format. Allowed types: {", ".join(sorted(ALLOWED_IMAGE_EXTENSIONS))}.'
+        )
 
-    # Derive extension from Pillow's detected format — never from user input —
-    # to prevent tainted data from reaching the filesystem path.
-    _PILLOW_FORMAT_TO_EXT = {'JPEG': 'jpg', 'PNG': 'png', 'WEBP': 'webp', 'GIF': 'gif'}
-    detected = Image.open(file.stream).format
-    safe_ext = _PILLOW_FORMAT_TO_EXT.get(detected, 'jpg')
     file.stream.seek(0)
-
     filename = f"{uuid.uuid4().hex}.{safe_ext}"
     filepath = os.path.join(UPLOAD_FOLDER, filename)
     file.save(filepath)
