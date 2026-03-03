@@ -77,8 +77,13 @@ app.config['PERMANENT_SESSION_LIFETIME'] = 24 * 60 * 60  # 24 hours
 # Configure logging after all configuration is set
 configure_logging(app)
 
-# File upload configuration
-UPLOAD_FOLDER = os.path.join(app.static_folder, 'uploads', 'covers')
+# File upload configuration — COVER_UPLOAD_DIR can be set to an external
+# persistent path in production (e.g. a mounted volume). Defaults to
+# static/uploads/covers so dev works without any extra config.
+UPLOAD_FOLDER = os.getenv(
+    'COVER_UPLOAD_DIR',
+    os.path.join(app.static_folder, 'uploads', 'covers')
+)
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5 MB upload limit
 ALLOWED_IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'gif'}
@@ -756,12 +761,12 @@ def save_cover_upload(file):
     filename = f"{uuid.uuid4().hex}.{safe_ext}"
     filepath = os.path.join(UPLOAD_FOLDER, filename)
     file.save(filepath)
-    return f"/static/uploads/covers/{filename}"
+    return f"/covers/{filename}"
 
 
 def delete_local_cover(cover_url):
     """Delete a locally uploaded cover file if it exists."""
-    if cover_url and cover_url.startswith('/static/uploads/covers/'):
+    if cover_url and cover_url.startswith('/covers/'):
         # Resolve to an absolute path and confirm it stays within UPLOAD_FOLDER
         # before touching the filesystem.
         safe_root = os.path.realpath(UPLOAD_FOLDER)
@@ -1561,6 +1566,12 @@ def reset_password():
     
     # Pass token as hidden form field instead of URL parameters
     return render_template('reset_password.html', form=form, user=user, token=token)
+
+@app.route('/covers/<filename>')
+def uploaded_cover(filename):
+    """Serve uploaded cover images from UPLOAD_FOLDER."""
+    from flask import send_from_directory
+    return send_from_directory(UPLOAD_FOLDER, filename)
 
 @app.route('/')
 @login_required

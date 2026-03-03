@@ -28,11 +28,14 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       SQLALCHEMY_DATABASE_URI: postgresql+psycopg://${DB_USER:-booknook}:${DB_PASSWORD:-changeme}@db:5432/${DB_NAME:-booknook}
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-True}
+      COVER_UPLOAD_DIR: /data/covers
     ports:
       - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - covers_data:/data/covers
     networks:
       - booknook_network
     restart: unless-stopped
@@ -46,6 +49,7 @@ services:
 
 volumes:
   postgres_data:
+  covers_data:
 
 networks:
   booknook_network:
