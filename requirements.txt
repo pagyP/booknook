@@ -13,5 +13,5 @@ gunicorn==22.0.0
 psycopg[binary]==3.2.13
 pyotp==2.9.0
 qrcode==8.2
-cryptography==46.0.3
+cryptography==50.0.0
 Pillow==13.0.0
