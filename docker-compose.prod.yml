@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:18.1-alpine3.22
+    image: postgres:18.7-alpine3.24
     container_name: booknook_db
     environment:
       POSTGRES_USER: ${DB_USER:-booknook}
